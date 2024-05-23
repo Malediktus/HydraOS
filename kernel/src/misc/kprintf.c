@@ -1,27 +1,44 @@
 #include <kernel/kprintf.h>
+#include <kernel/ansi.h>
 #include <stdbool.h>
 
 static chardev_t *kprintf_cdev;
+static struct ansi_state ansi_state;
 
 void _putchar(char c)
 {
-    chardev_write(c, CHARDEV_COLOR_LIGHT_GRAY, CHARDEV_COLOR_BLACK, kprintf_cdev);
+    struct color_char ch = ansi_process(&ansi_state, c);
+    if (!ch.ascii)
+    {
+        return;
+    }
+
+    uint8_t fore_color = ch.style & 0x07;
+    uint8_t fore_bright = (ch.style & 0x08) >> 3;
+
+    uint8_t back_color = (ch.style & 0x70) >> 4;
+    uint8_t back_bright = (ch.style & 0x80) >> 7;
+
+    uint8_t fg = fore_color | (fore_bright << 3);
+    uint8_t bg = back_color | (back_bright << 3);
+
+    chardev_write(ch.ascii, (chardev_color_t)fg, (chardev_color_t)bg, kprintf_cdev);
 }
 
 // from https://github.com/mpaland/printf
 
 // Copyright 2014 Marco Paland
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -606,6 +623,8 @@ static int _vsnprintf(out_fct_type out, char *buffer, const size_t maxlen, const
 {
     unsigned int flags, width, precision, n;
     size_t idx = 0U;
+
+    ansi_state = ansi_init();
 
     if (!buffer)
     {

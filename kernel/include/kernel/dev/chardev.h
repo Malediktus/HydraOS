@@ -23,9 +23,6 @@ typedef enum
     CHARDEV_COLOR_WHITE = 15,
 } chardev_color_t;
 
-/*
-!!! if the driver doesn't allocate the device itself the reference counting will not free the memory
-*/
 typedef struct _chardev
 {
     int (*write)(char, chardev_color_t, chardev_color_t, struct _chardev *);
