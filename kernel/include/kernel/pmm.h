@@ -16,9 +16,8 @@ typedef struct
     uint8_t type;
 } memory_map_entry_t;
 
-int pmm_init(memory_map_entry_t *memory_map, uint64_t num_mmap_entries);
+int pmm_init(memory_map_entry_t *memory_map, uint64_t num_mmap_entries, uint64_t total_memory);
 void *pmm_alloc(void);
 void pmm_free(uint64_t *page);
-int pmm_reserve(uint64_t *addr);
 
 #endif

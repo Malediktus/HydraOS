@@ -165,18 +165,11 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    if (interrupts_init() < 0)
+    if (pmm_init(boot_info.memory_map, boot_info.num_mmap_entries, boot_info.total_memory) < 0) // TODO: add 64 bit address range
     {
         return;
     }
-
-    enable_interrupts();
-
-    if (pmm_init(boot_info.memory_map, 1) < 0) // TODO: add 64 bit address range and other mmap regiones
-    {
-        return;
-    }
-
+    
     page_table_t *kernel_pml4 = pmm_alloc();
     if (!kernel_pml4)
     {
@@ -211,6 +204,13 @@ void kmain(uint64_t multiboot2_struct_addr)
     {
         return;
     }
+
+    if (interrupts_init() < 0)
+    {
+        return;
+    }
+
+    enable_interrupts();
 
     kprintf("initializing the kernel\n");
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m");
