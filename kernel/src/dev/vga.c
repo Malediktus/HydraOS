@@ -1,4 +1,5 @@
 #include <kernel/dev/chardev.h>
+#include <kernel/kmm.h>
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -79,18 +80,22 @@ int vga_free(chardev_t *cdev)
         return -1;
     }
 
+    kfree(cdev);
+
     return 0;
 }
 
-int vga_create(chardev_t *cdev)
+chardev_t *vga_create(void)
 {
-    if (!cdev)
-    {
-        return -1;
-    }
     if (vga_initialized)
     {
-        return -2;
+        return NULL;
+    }
+
+    chardev_t *cdev = kmalloc(sizeof(chardev_t));
+    if (!cdev)
+    {
+        return NULL;
     }
     vga_initialized = true;
 
@@ -107,5 +112,5 @@ int vga_create(chardev_t *cdev)
         }
     }
 
-    return 0;
+    return cdev;
 }

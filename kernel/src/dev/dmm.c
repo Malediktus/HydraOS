@@ -1,36 +1,50 @@
 #include <kernel/dev/dmm.h>
+#include <kernel/kmm.h>
 
-#define MAX_CHARDEVS 2
+#define CHARDEV_CAPACITY_INCREASE 3
 
-chardev_t chardevs[MAX_CHARDEVS] = {};
-size_t num_chardevs = 0;
+chardev_t **chardevs = NULL;
+size_t chardevs_capacity = 0;
+size_t chardevs_size = 0;
 
-int e9_create(chardev_t *cdev);
-int vga_create(chardev_t *cdev);
+chardev_t *e9_create(void);
+chardev_t *vga_create(void);
 
 int init_devices(void)
 {
     // TODO: use pci and dont hardcode this
-    if (e9_create(&chardevs[0]) < 0)
+    chardevs = kmalloc(sizeof(chardev_t *) * CHARDEV_CAPACITY_INCREASE);
+    if (!chardevs)
     {
         return -1;
     }
 
-    if (vga_create(&chardevs[1]) < 0)
+    chardevs_capacity = CHARDEV_CAPACITY_INCREASE;
+    chardevs_size = 0;
+
+    chardevs[0] = e9_create();
+    if (!chardevs[0])
     {
         return -1;
     }
+    chardevs_size++;
 
-    num_chardevs = 2;
+    chardevs[1] = vga_create();
+    if (!chardevs[1])
+    {
+        return -1;
+    }
+    chardevs_size++;
+
     return 0;
 }
 
 chardev_t *get_chardev(size_t index)
 {
-    if (index >= num_chardevs)
+    if (index >= chardevs_size)
     {
         return NULL;
     }
 
-    return chardev_new_ref(&chardevs[index]);
+    return chardev_new_ref(chardevs[index]);
 }

@@ -160,16 +160,6 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    if (init_devices() < 0)
-    {
-        return;
-    }
-
-    if (kprintf_init(get_chardev(boot_info.tty)) < 0)
-    {
-        return;
-    }
-
     if (segmentation_init() < 0)
     {
         return;
@@ -207,7 +197,17 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    if (kmm_init(pmm_alloc(), PAGE_SIZE, 16) < 0)
+    if (kmm_init(pmm_alloc(), PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
+    {
+        return;
+    }
+
+    if (init_devices() < 0)
+    {
+        return;
+    }
+
+    if (kprintf_init(get_chardev(boot_info.tty)) < 0)
     {
         return;
     }

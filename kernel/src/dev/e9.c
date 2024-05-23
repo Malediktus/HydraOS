@@ -1,5 +1,6 @@
 #include <kernel/dev/chardev.h>
 #include <kernel/port.h>
+#include <kernel/kmm.h>
 #include <stdbool.h>
 
 static bool e9_initialized = false;
@@ -26,18 +27,22 @@ int e9_free(chardev_t *cdev)
         return -1;
     }
 
+    kfree(cdev);
+
     return 0;
 }
 
-int e9_create(chardev_t *cdev)
+chardev_t *e9_create(void)
 {
-    if (!cdev)
-    {
-        return -1;
-    }
     if (e9_initialized)
     {
-        return -2;
+        return NULL;
+    }
+
+    chardev_t *cdev = kmalloc(sizeof(chardev_t));
+    if (!cdev)
+    {
+        return NULL;
     }
     e9_initialized = true;
 
@@ -45,5 +50,5 @@ int e9_create(chardev_t *cdev)
     cdev->free = &e9_free;
     cdev->references = 1;
 
-    return 0;
+    return cdev;
 }

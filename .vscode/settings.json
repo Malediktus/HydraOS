@@ -9,6 +9,7 @@
         "vmm.h": "c",
         "string.h": "c",
         "smm.h": "c",
-        "pmm.h": "c"
+        "pmm.h": "c",
+        "dmm.h": "c"
     }
 }
