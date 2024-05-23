@@ -1,6 +1,7 @@
 #include <kernel/multiboot2.h>
 #include <kernel/string.h>
 #include <kernel/dev/dmm.h>
+#include <kernel/kprintf.h>
 
 typedef struct
 {
@@ -97,9 +98,13 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    chardev_t *cdev = get_chardev(boot_info.tty);
-    chardev_write('X', CHARDEV_COLOR_LIGHT_GRAY, CHARDEV_COLOR_BLACK, cdev);
-    chardev_free_ref(cdev);
+    if (kprintf_init(get_chardev(boot_info.tty)) < 0)
+    {
+        return;
+    }
 
+    kprintf("\ninitializing the kernel\n");
+
+    kprintf_free();
     while (1);
 }
