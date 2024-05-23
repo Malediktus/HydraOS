@@ -18,7 +18,7 @@ set timeout=0
 set default=0
 
 menuentry "HydraOS" {
-	multiboot2 /boot/hydrakernel
+	multiboot2 /boot/hydrakernel klog=tty1
 	boot
 }
 EOF
