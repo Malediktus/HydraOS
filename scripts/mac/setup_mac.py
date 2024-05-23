@@ -162,6 +162,23 @@ class MacInstaller(Installer):
             return False
 
         return True
+    
+    def install_xorriso(self) -> bool:
+        if HomebrewManager.is_package_installed('xorriso'):
+            print('info: upgrading "xorriso"')
+            if not HomebrewManager.upgrade_package('xorriso'):
+                print('error: failed to upgrade package "xorriso"')
+                return False
+
+            return True
+        if not cli.query_yes_no("xorriso is not installed... install it?"):
+            return False
+
+        if not HomebrewManager.install_package('xorriso'):
+            print('error: failed to install package "xorriso"')
+            return False
+
+        return True
 
     def is_grub2_installed(self) -> bool:
         try:

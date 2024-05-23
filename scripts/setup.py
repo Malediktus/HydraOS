@@ -12,11 +12,11 @@ def main() -> None:
     if os == 'Darwin':
         print('info: host os "MacOS" detected')
         installer = MacInstaller(
-            ['make', 'x86_64_elf_binutils', 'x86_64_elf_gcc', 'nasm', 'grub2'])
+            ['make', 'x86_64_elf_binutils', 'x86_64_elf_gcc', 'nasm', 'xorriso', 'grub2'])
     elif os == 'Linux':
         print('info: host os "Linux" detected')
         installer = LinuxInstaller(
-            ['make', 'x86_64_elf_binutils', 'x86_64_elf_gcc', 'nasm', 'grub2'])
+            ['make', 'x86_64_elf_binutils', 'x86_64_elf_gcc', 'nasm', 'xorriso', 'grub2'])
     elif os == 'Windows':
         print('info: host os "Windows" detected')
         print('warn: please use wsl2 to build HydraOS')

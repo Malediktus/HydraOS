@@ -123,16 +123,16 @@ class LinuxInstaller(Installer):
             return True
 
         for package in required_packages:
-            if HomebrewManager.is_package_installed(package):
+            if PackageManager.is_package_installed(package):
                 print(f'info: upgrading "{package}"')
-                if not HomebrewManager.upgrade_package(package):
+                if not PackageManager.upgrade_package(package):
                     print(f'error: failed to upgrade package "{package}"')
                     return False
             else:
                 if not cli.query_yes_no(f"{package} is not installed... install it?"):
                     return False
 
-                if not HomebrewManager.install_package(package):
+                if not PackageManager.install_package(package):
                     print(f'error: failed to install package "{package}"')
                     return False
 
@@ -176,6 +176,23 @@ class LinuxInstaller(Installer):
 
         if not PackageManager.install_package('nasm'):
             print('error: failed to install package "nasm"')
+            return False
+
+        return True
+    
+    def install_xorriso(self) -> bool:
+        if PackageManager.is_package_installed('xorriso'):
+            print('info: upgrading "xorriso"')
+            if not PackageManager.upgrade_package('xorriso'):
+                print('error: failed to upgrade package "xorriso"')
+                return False
+
+            return True
+        if not cli.query_yes_no("xorriso is not installed... install it?"):
+            return False
+
+        if not PackageManager.install_package('xorriso'):
+            print('error: failed to install package "xorriso"')
             return False
 
         return True
