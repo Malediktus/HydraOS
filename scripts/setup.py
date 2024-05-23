@@ -1,3 +1,4 @@
+from utils.installer import Installer
 from mac.setup_mac import MacInstaller
 from linux.setup_linux import LinuxInstaller
 import platform
@@ -10,7 +11,7 @@ def main() -> None:
 
     if os == 'Darwin':
         print('info: host os "MacOS" detected')
-        installer = mac.MacInstaller(
+        installer = MacInstaller(
             ['make', 'x86_64_elf_binutils', 'x86_64_elf_gcc', 'nasm', 'grub2'])
     elif os == 'Linux':
         print('info: host os "Linux" detected')
