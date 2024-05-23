@@ -98,5 +98,14 @@ int vga_create(chardev_t *cdev)
     cdev->free = &vga_free;
     cdev->references = 1;
 
+    // clearing the screen
+    for (size_t row = 0; row < NUM_ROWS; row++)
+    {
+        for (size_t col = 0; col < NUM_COLS; col++)
+        {
+            vga_char_mem[col + row * NUM_COLS] = 0x0000;
+        }
+    }
+
     return 0;
 }
