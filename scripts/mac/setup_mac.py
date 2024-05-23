@@ -1,5 +1,5 @@
 import utils.cli as cli
-import setup
+from utils.installer import Installer
 import subprocess
 import os
 
@@ -69,7 +69,7 @@ class HomebrewManager:
         return False
 
 
-class MacInstaller(setup.Installer):
+class MacInstaller(Installer):
     def __init__(self, packages: list) -> None:
         super().__init__(packages)
 

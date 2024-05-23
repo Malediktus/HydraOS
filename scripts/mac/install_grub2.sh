@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 mkdir $HOME/src
 pushd $HOME/src
 

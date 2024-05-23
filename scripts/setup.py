@@ -1,14 +1,7 @@
-import mac.setup_mac as mac
+from mac.setup_mac import MacInstaller
+from linux.setup_linux import LinuxInstaller
 import platform
 import sys
-
-
-class Installer():
-    def __init__(self, packages: list) -> None:
-        self.packages = packages
-
-    def install(self) -> bool:
-        pass
 
 
 def main() -> None:
@@ -21,8 +14,13 @@ def main() -> None:
             ['make', 'x86_64_elf_binutils', 'x86_64_elf_gcc', 'nasm', 'grub2'])
     elif os == 'Linux':
         print('info: host os "Linux" detected')
+        installer = LinuxInstaller(
+            ['make', 'x86_64_elf_binutils', 'x86_64_elf_gcc', 'nasm', 'grub2'])
     elif os == 'Windows':
         print('info: host os "Windows" detected')
+        print('warn: please use wsl2 to build HydraOS')
+        print('error: unsupported host os')
+        sys.exit(1)
     else:
         print('error: unsupported host os')
         sys.exit(1)
