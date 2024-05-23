@@ -4,6 +4,11 @@
         "multiboot2.h": "c",
         "chardev.h": "c",
         "stdbool.h": "c",
-        "kprintf.h": "c"
+        "kprintf.h": "c",
+        "kmm.h": "c",
+        "vmm.h": "c",
+        "string.h": "c",
+        "smm.h": "c",
+        "pmm.h": "c"
     }
 }

@@ -4,8 +4,9 @@ size_t strlen(const char *str)
 {
     const char *s;
 
-    for (s = str; *s; ++s);
-    
+    for (s = str; *s; ++s)
+        ;
+
     return (s - str);
 }
 
@@ -17,6 +18,16 @@ int strcmp(const char *s1, const char *s2)
         s2++;
     }
     return *(const uint8_t *)s1 - *(const uint8_t *)s2;
+}
+
+void *memset(void *dest, register int val, register size_t len)
+{
+    register unsigned char *ptr = (unsigned char *)dest;
+    while (len-- > 0)
+    {
+        *ptr++ = val;
+    }
+    return dest;
 }
 
 int atoui(char *s)
