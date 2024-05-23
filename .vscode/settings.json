@@ -3,6 +3,7 @@
         "stddef.h": "c",
         "multiboot2.h": "c",
         "chardev.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "kprintf.h": "c"
     }
 }
