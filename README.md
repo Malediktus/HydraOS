@@ -13,6 +13,8 @@ You will need the following requirements:
 - x86_64-elf-gcc
 - nasm
 - grub2-common
+- grub-pc-bin
+- xorriso
 - qemu-system-x86_64 (for emulation)
 
 You can install them manually or alternatively using the provided script:
