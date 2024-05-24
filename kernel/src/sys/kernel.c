@@ -1,5 +1,6 @@
 #include <kernel/multiboot2.h>
 #include <kernel/string.h>
+#include <kernel/dev/pci.h>
 #include <kernel/dev/dmm.h>
 #include <kernel/kprintf.h>
 #include <kernel/smm.h>
@@ -190,7 +191,12 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    if (kmm_init(pmm_alloc(), PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
+    if (kmm_init(kernel_pml4, (get_max_addr() + PAGE_SIZE - 1) / PAGE_SIZE, 8 * PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
+    {
+        return;
+    }
+
+    if (pci_init() < 0)
     {
         return;
     }
@@ -216,5 +222,8 @@ void kmain(uint64_t multiboot2_struct_addr)
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
 
     kprintf_free();
+    free_devices();
+    pci_free();
+
     while (1);
 }

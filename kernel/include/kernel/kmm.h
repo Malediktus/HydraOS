@@ -5,8 +5,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-int kmm_init(void *arena, size_t size, size_t alignment);
+#include <kernel/vmm.h>
+
+int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t alignment);
 void *kmalloc(size_t size);
 void kfree(void *ptr);
+
+void *krealloc(void *ptr, size_t old_size, size_t new_size);
 
 #endif

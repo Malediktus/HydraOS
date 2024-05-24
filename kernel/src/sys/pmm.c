@@ -7,6 +7,7 @@ struct
     uint64_t *bitmap;
     uint64_t num_pages;
     uint64_t last_index;
+    uint64_t max_addr;
 } page_allocator;
 
 static void bit_set(uint64_t *bitmap, uint64_t index)
@@ -36,8 +37,8 @@ int pmm_init(memory_map_entry_t *memory_map, uint64_t num_mmap_entries, uint64_t
     memset(&page_allocator, 0, sizeof(page_allocator));
 
     page_allocator.num_pages = total_memory / PAGE_SIZE;
-    uint64_t max_addr = memory_map[num_mmap_entries - 1].addr + memory_map[num_mmap_entries - 1].size;
-    page_allocator.bitmap = (uint64_t *)max_addr; // needed for validation... nullptr is a possible value here, max_addr isn't
+    page_allocator.max_addr = memory_map[num_mmap_entries - 1].addr + memory_map[num_mmap_entries - 1].size;
+    page_allocator.bitmap = (uint64_t *)page_allocator.max_addr; // needed for validation... nullptr is a possible value here, max_addr isn't
 
     uint64_t bitmap_size = (page_allocator.num_pages + 8 - 1) / 8;
     for (uint64_t i = 0; i < num_mmap_entries; i++)
@@ -58,7 +59,7 @@ int pmm_init(memory_map_entry_t *memory_map, uint64_t num_mmap_entries, uint64_t
         break;
     }
 
-    if ((uint64_t)page_allocator.bitmap == max_addr)
+    if ((uint64_t)page_allocator.bitmap == page_allocator.max_addr)
     {
         res = -1;
         goto out;
@@ -105,4 +106,9 @@ void pmm_free(uint64_t *page)
     uint64_t index = (uint64_t)page / PAGE_SIZE;
     bit_clear(page_allocator.bitmap, index);
     page_allocator.last_index = index;
+}
+
+uint64_t get_max_addr(void)
+{
+    return page_allocator.max_addr;
 }

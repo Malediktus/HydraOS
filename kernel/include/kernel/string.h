@@ -8,6 +8,7 @@ size_t strlen(const char *str);
 int strcmp(const char *s1, const char *s2);
 
 void *memset(void *dest, register int val, register size_t len);
+void memcpy(void *dest, void *src, size_t len);
 
 int atoui(char *s);
 

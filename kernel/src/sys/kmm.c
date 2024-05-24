@@ -1,5 +1,6 @@
 #include <kernel/kmm.h>
 #include <kernel/pmm.h>
+#include <kernel/string.h>
 #include <stdbool.h>
 
 #define MAX_LEVEL 12
@@ -107,9 +108,9 @@ buddy_node_t *head;
 buddy_node_t *tail;
 size_t alignment;
 
-int kmm_init(void *arena, size_t size, size_t _alignment)
+int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t _alignment)
 {
-    if (!arena || (size & (size - 1)) != 0 || (_alignment & (_alignment - 1)) != 0)
+    if (!kernel_pml4 || base == 0 || (size & (size - 1)) != 0 || (_alignment & (_alignment - 1)) != 0)
     {
         return -1;
     }
@@ -119,12 +120,26 @@ int kmm_init(void *arena, size_t size, size_t _alignment)
         _alignment = sizeof(buddy_node_t);
     }
 
-    if (((uintptr_t)arena % _alignment) != 0)
+    if (((uintptr_t)base % _alignment) != 0)
     {
         return -1;
     }
 
-    head = arena;
+    for (size_t i = 0; i < size / PAGE_SIZE; i++)
+    {
+        void *page = pmm_alloc();
+        if (!page)
+        {
+            return -1;
+        }
+
+        if (pml4_map(kernel_pml4, (void *)(base + i * PAGE_SIZE), page, PAGE_PRESENT | PAGE_WRITABLE) < 0)
+        {
+            return -1;
+        }
+    }
+
+    head = (buddy_node_t *)base;
     head->size = size;
     head->free = true;
 
@@ -250,9 +265,17 @@ void kfree(void *ptr)
     }
 
     buddy_node_t *node;
-                
+
     node = (buddy_node_t *)((char *)ptr - alignment);
     node->free = true;
-        
+
     buddy_node_coalescence(head, tail);
+}
+
+void *krealloc(void *ptr, size_t old_size, size_t new_size)
+{
+    void *res = kmalloc(new_size);
+    memcpy(res, ptr, old_size);
+    kfree(ptr);
+    return res;
 }

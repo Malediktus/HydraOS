@@ -30,6 +30,17 @@ void *memset(void *dest, register int val, register size_t len)
     return dest;
 }
 
+void memcpy(void *dest, void *src, size_t len)
+{
+    char *csrc = (char *)src;
+    char *cdest = (char *)dest;
+
+    for (size_t i = 0; i < len; i++)
+    {
+        cdest[i] = csrc[i];
+    }
+}
+
 int atoui(char *s)
 {
     int acum = 0;
