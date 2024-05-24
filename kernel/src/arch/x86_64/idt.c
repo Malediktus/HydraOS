@@ -145,46 +145,46 @@ char *exception_names[] = {
 
 void exception_handler(interrupt_frame_t *frame)
 {
-    kprintf("\x1b[31mCPU exception triggered\n\n[Exception Info]\nType: %s\n", exception_names[frame->int_no]);
+    kprintf("\x1b[41mCPU exception triggered\n\n[Exception Info]\nType: %s\n", exception_names[frame->int_no]);
     switch (frame->int_no)
     {
     case 14: // Page Fault
         uint64_t cr2_val;
         __asm__ volatile("movq %%cr2, %0" : "=r"(cr2_val));
 
-        kprintf("\x1b[31mError Code:\n");
-        kprintf("\x1b[31m- Tried to access virtual address 0x%x\n", cr2_val);
+        kprintf("\x1b[41mError Code:\n");
+        kprintf("\x1b[41m- Tried to access virtual address 0x%x\n", cr2_val);
         if (frame->err_code & 0b1)
         {
-            kprintf("\x1b[31m- Couldn't complete because of page-protection violation\n");
+            kprintf("\x1b[41m- Couldn't complete because of page-protection violation\n");
         }
         else
         {
-            kprintf("\x1b[31m- Couldn't complete because page was not present\n");
+            kprintf("\x1b[41m- Couldn't complete because page was not present\n");
         }
         if (frame->err_code & 0b10)
         {
-            kprintf("\x1b[31m- This was an attempt to WRITE to this address.\n");
+            kprintf("\x1b[41m- This was an attempt to WRITE to this address.\n");
         }
         else
         {
-            kprintf("\x1b[31m- This was an attempt to READ from this address.\n");
+            kprintf("\x1b[41m- This was an attempt to READ from this address.\n");
         }
         if (frame->err_code & 0b100)
         {
-            kprintf("\x1b[31m- Memory access came from user.\n");
+            kprintf("\x1b[41m- Memory access came from user.\n");
         }
         else
         {
-            kprintf("\x1b[31m- Memory access came from kernel.\n");
+            kprintf("\x1b[41m- Memory access came from kernel.\n");
         }
         if (frame->err_code & 0b1000)
         {
-            kprintf("\x1b[31m- caused by reading a 1 in a reserved field.\n");
+            kprintf("\x1b[41m- caused by reading a 1 in a reserved field.\n");
         }
         if (frame->err_code & 0b10000)
         {
-            kprintf("\x1b[31m- caused by an instruction fetch.\n");
+            kprintf("\x1b[41m- caused by an instruction fetch.\n");
         }
         break;
 
@@ -192,7 +192,7 @@ void exception_handler(interrupt_frame_t *frame)
         break;
     }
 
-    kprintf("\x1b[31m\n[Registers]\ncs=0x%x rip=0x%x\nrflags=0x%x error=0x%x\nrax=0x%x rcx=0x%x\nrdx=0x%x rsi=0x%x\nrdi=0x%x r8=0x%x\nr9=0x%x r10=0x%x\nr11=0x%x rbp=0x%x\nrsp=0x%x\n",
+    kprintf("\x1b[41m\n[Registers]\ncs=0x%x rip=0x%x\nrflags=0x%x error=0x%x\nrax=0x%x rcx=0x%x\nrdx=0x%x rsi=0x%x\nrdi=0x%x r8=0x%x\nr9=0x%x r10=0x%x\nr11=0x%x rbp=0x%x\nrsp=0x%x\n",
               frame->cs, frame->rip, frame->rflags, frame->err_code, frame->rax, frame->rcx, frame->rdx,
               frame->rsi, frame->rdi, frame->r8, frame->r9, frame->r10, frame->r11, frame->rsp);
 
