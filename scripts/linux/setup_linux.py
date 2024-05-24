@@ -211,5 +211,19 @@ class LinuxInstaller(Installer):
         if not PackageManager.install_package('grub2-common'):
             print('error: failed to install package "grub2-common"')
             return False
+        
+        if PackageManager.is_package_installed('grub-pc-bin'):
+            print('info: upgrading "grub-pc-bin"')
+            if not PackageManager.upgrade_package('grub-pc-bin'):
+                print('error: failed to upgrade package "grub-pc-bin"')
+                return False
+
+            return True
+        if not cli.query_yes_no("grub-pc-bin is not installed... install it?"):
+            return False
+
+        if not PackageManager.install_package('grub-pc-bin'):
+            print('error: failed to install package "grub-pc-bin"')
+            return False
 
         return True
