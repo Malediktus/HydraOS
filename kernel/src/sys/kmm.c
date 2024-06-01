@@ -56,7 +56,7 @@ buddy_node_t *buddy_node_find_best(buddy_node_t *head, buddy_node_t *tail, size_
         if (node->free && buddy->free && node->size == buddy->size)
         {
             node->size <<= 1;
-            if (size <= node->size && (res == NULL || node->size <= res->size))
+            if (size <= node->size && (!res || node->size <= res->size))
             {
                 res = node;
             }
@@ -70,13 +70,13 @@ buddy_node_t *buddy_node_find_best(buddy_node_t *head, buddy_node_t *tail, size_
         }
 
         if (node->free && size <= node->size &&
-            (res == NULL || node->size <= res->size))
+            (!res || node->size <= res->size))
         {
             res = node;
         }
 
         if (buddy->free && size <= buddy->size &&
-            (res == NULL || buddy->size < res->size))
+            (!res || buddy->size < res->size))
         {
             res = buddy;
         }
@@ -233,7 +233,7 @@ void *buddy_allocator_alloc(size_t size)
         size_t actual_size = buddy_node_size_required(size);
 
         buddy_node_t *found = buddy_node_find_best(head, tail, actual_size);
-        if (found == NULL)
+        if (!found)
         {
             // Try to coalesce all the free buddy blocks and then search again
             buddy_node_coalescence(head, tail);

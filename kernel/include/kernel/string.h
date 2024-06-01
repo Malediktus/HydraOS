@@ -12,4 +12,13 @@ void memcpy(void *dest, void *src, size_t len);
 
 int atoui(char *s);
 
+int isdigit(char c);
+int isspace(char c);
+int islower(char c);
+int isupper(char c);
+int isalpha(char c);
+
+long strtol(const char *restrict nptr, char **restrict endptr, int base);
+char *strchr(const char *p, int ch);
+
 #endif

@@ -7,13 +7,13 @@ chardev_t *vga_create(void);
 
 blockdev_t *ide_create(size_t index);
 
-#define CHARDEV_CAPACITY_INCREASE 3
+#define CHARDEVS_CAPACITY_INCREASE 3
 
 chardev_t **chardevs = NULL;
 size_t chardevs_capacity = 0;
 size_t chardevs_size = 0;
 
-#define BLOCKDEV_CAPACITY_INCREASE 3
+#define BLOCKDEVS_CAPACITY_INCREASE 3
 
 blockdev_t **blockdevs = NULL;
 size_t blockdevs_capacity = 0;
@@ -21,13 +21,13 @@ size_t blockdevs_size = 0;
 
 static int init_char_devices(void)
 {
-    chardevs = kmalloc(sizeof(chardev_t *) * CHARDEV_CAPACITY_INCREASE);
+    chardevs = kmalloc(sizeof(chardev_t *) * CHARDEVS_CAPACITY_INCREASE);
     if (!chardevs)
     {
         return -1;
     }
 
-    chardevs_capacity = CHARDEV_CAPACITY_INCREASE;
+    chardevs_capacity = CHARDEVS_CAPACITY_INCREASE;
     chardevs_size = 0;
 
     chardevs[chardevs_size] = e9_create();
@@ -42,13 +42,13 @@ static int init_char_devices(void)
 
 static int init_block_devices(void)
 {
-    blockdevs = kmalloc(sizeof(blockdev_t *) * BLOCKDEV_CAPACITY_INCREASE);
+    blockdevs = kmalloc(sizeof(blockdev_t *) * BLOCKDEVS_CAPACITY_INCREASE);
     if (!blockdevs)
     {
         return -1;
     }
 
-    blockdevs_capacity = BLOCKDEV_CAPACITY_INCREASE;
+    blockdevs_capacity = BLOCKDEVS_CAPACITY_INCREASE;
     blockdevs_size = 0;
 
     return 0;
@@ -65,8 +65,8 @@ static int try_init_char_device(pci_device_t *pci_dev)
     {
         if (chardevs_size >= chardevs_capacity)
         {
-            chardevs = krealloc(chardevs, chardevs_capacity, chardevs_capacity + CHARDEV_CAPACITY_INCREASE);
-            chardevs_capacity += CHARDEV_CAPACITY_INCREASE;
+            chardevs = krealloc(chardevs, chardevs_capacity, chardevs_capacity + sizeof(chardev_t *) * CHARDEVS_CAPACITY_INCREASE);
+            chardevs_capacity += CHARDEVS_CAPACITY_INCREASE;
         }
 
         chardevs[chardevs_size] = vga_create();
@@ -92,8 +92,8 @@ static int try_init_block_device(pci_device_t *pci_dev)
     {
         if (blockdevs_size >= blockdevs_capacity)
         {
-            blockdevs = krealloc(blockdevs, blockdevs_capacity, blockdevs_capacity + BLOCKDEV_CAPACITY_INCREASE);
-            blockdevs_capacity += BLOCKDEV_CAPACITY_INCREASE;
+            blockdevs = krealloc(blockdevs, blockdevs_capacity, blockdevs_capacity + sizeof(blockdev_t *) * BLOCKDEVS_CAPACITY_INCREASE);
+            blockdevs_capacity += BLOCKDEVS_CAPACITY_INCREASE;
         }
 
         for (size_t i = 0; i < 4; i++)
