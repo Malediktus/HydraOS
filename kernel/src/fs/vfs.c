@@ -40,7 +40,7 @@ int register_filesystem(filesystem_t *fs)
 
 typedef struct _mount
 {
-    blockdev_t *bdev;
+    virtual_blockdev_t *vbdev;
     filesystem_t *fs;
     int id;
 
@@ -49,7 +49,7 @@ typedef struct _mount
     void *fs_data;
 } mount_t;
 
-mount_t *mounts_head;
+mount_t *mounts_head = NULL;
 
 static int allocate_mount_id(void)
 {
@@ -74,9 +74,9 @@ static int allocate_mount_id(void)
     return -1;
 }
 
-int vfs_mount_blockdev(blockdev_t *bdev)
+int vfs_mount_blockdev(virtual_blockdev_t *vbdev)
 {
-    if (!bdev)
+    if (!vbdev)
     {
         return -1;
     }
@@ -84,7 +84,7 @@ int vfs_mount_blockdev(blockdev_t *bdev)
     filesystem_t *fs = NULL;
     for (size_t i = 0; i < filesystems_size; i++)
     {
-        if (filesystems[i]->fs_test(bdev) == 0)
+        if (filesystems[i]->fs_test(vbdev) == 0)
         {
             fs = filesystems[i];
             break;
@@ -104,9 +104,9 @@ int vfs_mount_blockdev(blockdev_t *bdev)
             return -1;
         }
 
-        mounts_head->bdev = blockdev_new_ref(bdev);
+        mounts_head->vbdev = vbdev;
         mounts_head->fs = fs;
-        mounts_head->fs_data = fs->fs_init(bdev);
+        mounts_head->fs_data = fs->fs_init(vbdev);
         mounts_head->id = allocate_mount_id();
         if (mounts_head->id < 0)
         {
@@ -134,9 +134,9 @@ int vfs_mount_blockdev(blockdev_t *bdev)
     }
     mnt->next = new_mount;
 
-    new_mount->bdev = blockdev_new_ref(bdev);
+    new_mount->vbdev = vbdev;
     new_mount->fs = fs;
-    new_mount->fs_data = fs->fs_init(bdev);
+    new_mount->fs_data = fs->fs_init(vbdev);
     new_mount->id = allocate_mount_id();
     if (new_mount->id < 0)
     {
@@ -166,12 +166,7 @@ int vfs_unmount_blockdev(int id)
         mnt->prev->next = mnt->next;
         mnt->next->prev = mnt->prev;
 
-        mnt->fs->fs_free(mnt->bdev, mnt->fs_data);
-
-        if (blockdev_free_ref(mnt->bdev) < 0)
-        {
-            return -1;
-        }
+        mnt->fs->fs_free(mnt->vbdev, mnt->fs_data);
 
         kfree(mnt);
         return 0;
@@ -246,7 +241,7 @@ file_node_t *vfs_open(const char *path, uint8_t action)
             return NULL;
         }
 
-        return mnt->fs->fs_open(local_path, action, mnt->bdev, mnt->fs_data);
+        return mnt->fs->fs_open(local_path, action, mnt->vbdev, mnt->fs_data);
     }
 
     return NULL;
@@ -267,7 +262,7 @@ int vfs_close(file_node_t *node)
             continue;
         }
 
-        return mnt->fs->fs_close(node, mnt->bdev, mnt->fs_data);
+        return mnt->fs->fs_close(node, mnt->vbdev, mnt->fs_data);
     }
 
     return -1;
@@ -288,7 +283,7 @@ int vfs_read(file_node_t *node, size_t size, uint8_t *buf)
             continue;
         }
 
-        return mnt->fs->fs_read(node, size, buf, mnt->bdev, mnt->fs_data);
+        return mnt->fs->fs_read(node, size, buf, mnt->vbdev, mnt->fs_data);
     }
 
     return -1;
@@ -309,7 +304,7 @@ int vfs_write(file_node_t *node, size_t size, const uint8_t *buf)
             continue;
         }
 
-        return mnt->fs->fs_write(node, size, buf, mnt->bdev, mnt->fs_data);
+        return mnt->fs->fs_write(node, size, buf, mnt->vbdev, mnt->fs_data);
     }
 
     return -1;
@@ -330,7 +325,7 @@ int vfs_readdir(file_node_t *node, dirent_t *dirent)
             continue;
         }
 
-        return mnt->fs->fs_readdir(node, dirent, mnt->bdev, mnt->fs_data);
+        return mnt->fs->fs_readdir(node, dirent, mnt->vbdev, mnt->fs_data);
     }
 
     return -1;
@@ -351,7 +346,7 @@ int vfs_delete(file_node_t *node)
             continue;
         }
 
-        return mnt->fs->fs_delete(node, mnt->bdev, mnt->fs_data);
+        return mnt->fs->fs_delete(node, mnt->vbdev, mnt->fs_data);
     }
 
     return -1;
