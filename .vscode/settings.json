@@ -12,6 +12,7 @@
         "pmm.h": "c",
         "dmm.h": "c",
         "pci.h": "c",
-        "blockdev.h": "c"
+        "blockdev.h": "c",
+        "vpt.h": "c"
     }
 }

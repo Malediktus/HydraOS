@@ -8,6 +8,9 @@
 #include <kernel/pmm.h>
 #include <kernel/vmm.h>
 #include <kernel/kmm.h>
+#include <kernel/fs/vpt.h>
+
+extern partition_table_t mbr_partition_table;
 
 typedef struct
 {
@@ -218,20 +221,40 @@ void kmain(uint64_t multiboot2_struct_addr)
 
     enable_interrupts();
 
-    kprintf("initializing the kernel\n");
-    kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
+    if (register_partition_table(&mbr_partition_table) < 0)
+    {
+        kprintf("\x1b[31mfailed to register mbr partition table\n");
+        while (1);
+    }
 
     size_t i = 0;
     blockdev_t *bdev = get_blockdev(i);
     while (bdev)
     {
         kprintf("found disc with %ld sectors, id %ld\n", bdev->num_blocks, i);
+
+        if (scan_partition(bdev) < 0)
+        {
+            kprintf("\x1b[31mfailed to scan partition table\n");
+            bdev = get_blockdev(i++);
+            continue;
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            virtual_blockdev_t *part = get_virtual_blockdev(bdev, i);
+            if (!part)
+            {
+                break;
+            }
+            kprintf(" - parititon type: 0x%x\n", part->type);
+        }
+
         bdev = get_blockdev(i++);
     }
 
-    kprintf_free();
-    free_devices();
-    pci_free();
+    kprintf("initializing the kernel\n");
+    kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
 
     while (1);
 }

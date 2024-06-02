@@ -30,7 +30,7 @@ typedef struct _partition_table
     int (*pt_free)(blockdev_t *, void *);
     int (*pt_test)(blockdev_t *);
 
-    int (*pt_get)(size_t, void *, virtual_blockdev_t *);
+    int (*pt_get)(uint8_t, void *, virtual_blockdev_t *);
 } partition_table_t;
 
 int register_partition_table(partition_table_t *pt);

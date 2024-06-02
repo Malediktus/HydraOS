@@ -33,8 +33,7 @@ int register_filesystem(filesystem_t *fs)
         filesystems_capacity += FILESYSTEMS_CAPACITY_INCREASE;
     }
 
-    filesystems[filesystems_size] = fs;
-
+    filesystems[filesystems_size++] = fs;
     return 0;
 }
 

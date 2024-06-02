@@ -45,7 +45,7 @@ int scan_partition(blockdev_t *bdev)
     partition_table_t *pt = NULL;
     for (size_t i = 0; i < partition_tables_size; i++)
     {
-        if (partition_tables[i]->pt_test(bdev))
+        if (partition_tables[i]->pt_test(bdev) == 0)
         {
             pt = partition_tables[i];
             break;
@@ -65,6 +65,12 @@ int scan_partition(blockdev_t *bdev)
         vbdev->bdev = blockdev_new_ref(bdev);
         vbdev->lba_offset = 0;
         vbdev->type = 0;
+        vbdev->index = 0;
+
+        if (add_virtual_blockdev(vbdev) < 0)
+        {
+            return -1;
+        }
 
         return 0;
     }
@@ -83,7 +89,7 @@ int scan_partition(blockdev_t *bdev)
 
     vbdev->pt = pt;
     vbdev->bdev = bdev;
-    for (size_t i = 0; pt->pt_get(i, pt_data, vbdev) >= 0 && i < INT32_MAX; i++)
+    for (uint8_t i = 0; pt->pt_get(i, pt_data, vbdev) >= 0 && i < UINT8_MAX; i++)
     {
         if (add_virtual_blockdev(vbdev) < 0)
         {
@@ -175,7 +181,7 @@ int register_partition_table(partition_table_t *pt)
         partition_tables_capacity += PARTITION_TABLES_CAPACITY_INCREASE;
     }
 
-    partition_tables[partition_tables_size] = pt;
+    partition_tables[partition_tables_size++] = pt;
 
     return 0;
 }
