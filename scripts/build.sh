@@ -23,4 +23,27 @@ menuentry "HydraOS" {
 }
 EOF
 
-grub-mkrescue -o ../hydraos.iso /tmp/hydra_root/
+dd if=/dev/zero of=../hydraos.img bs=512 count=131072
+fdisk ../hydraos.img << EOF
+o
+n
+p
+1
+
+
+a
+w
+EOF
+
+sudo losetup /dev/loop0 ../hydraos.img
+sudo losetup /dev/loop1 ../hydraos.img -o 1048576
+
+sudo mkdosfs -F32 -f 2 /dev/loop1
+sudo mount /dev/loop1 /mnt
+sudo cp -rf /tmp/hydra_root/* /mnt
+sudo grub-install --root-directory=/mnt --no-floppy --modules="normal part_msdos multiboot2" /dev/loop0
+sudo umount /mnt
+sudo losetup -d /dev/loop0
+sudo losetup -d /dev/loop1
+
+# grub-mkrescue -o ../hydraos.iso /tmp/hydra_root/
