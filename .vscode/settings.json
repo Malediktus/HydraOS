@@ -10,7 +10,7 @@
         "string.h": "c",
         "smm.h": "c",
         "pmm.h": "c",
-        "dmm.h": "c",
+        "devm.h": "c",
         "pci.h": "c",
         "blockdev.h": "c",
         "vpt.h": "c"

@@ -1,4 +1,4 @@
-#include <kernel/dev/dmm.h>
+#include <kernel/dev/devm.h>
 #include <kernel/dev/pci.h>
 #include <kernel/kmm.h>
 
@@ -6,6 +6,8 @@ chardev_t *e9_create(void);
 chardev_t *vga_create(void);
 
 blockdev_t *ide_create(size_t index);
+
+inputdev_t *ps2_create(void);
 
 #define CHARDEVS_CAPACITY_INCREASE 3
 
@@ -18,6 +20,12 @@ size_t chardevs_size = 0;
 blockdev_t **blockdevs = NULL;
 size_t blockdevs_capacity = 0;
 size_t blockdevs_size = 0;
+
+#define INPUTDEVS_CAPACITY_INCREASE 3
+
+inputdev_t **inputdevs = NULL;
+size_t inputdevs_capacity = 0;
+size_t inputdevs_size = 0;
 
 static int init_char_devices(void)
 {
@@ -50,6 +58,27 @@ static int init_block_devices(void)
 
     blockdevs_capacity = BLOCKDEVS_CAPACITY_INCREASE;
     blockdevs_size = 0;
+
+    return 0;
+}
+
+static int init_input_devices(void)
+{
+    inputdevs = kmalloc(sizeof(inputdev_t *) * INPUTDEVS_CAPACITY_INCREASE);
+    if (!inputdevs)
+    {
+        return -1;
+    }
+
+    inputdevs_capacity = INPUTDEVS_CAPACITY_INCREASE;
+    inputdevs_size = 0;
+
+    inputdevs[inputdevs_size] = ps2_create();
+    if (!inputdevs[inputdevs_size])
+    {
+        return -1;
+    }
+    inputdevs_size++;
 
     return 0;
 }
@@ -123,6 +152,11 @@ int init_devices(void)
         return -1;
     }
 
+    if (init_input_devices() < 0)
+    {
+        return -1;
+    }
+
     for (size_t i = 0; i < MAX_PCI_DEVICES; i++)
     {
         pci_device_t *pci_dev = pci_get_device(i);
@@ -174,7 +208,7 @@ chardev_t *get_chardev(size_t index)
         return NULL;
     }
 
-    return chardev_new_ref(chardevs[index]);
+    return chardevs[index];
 }
 
 blockdev_t *get_blockdev(size_t index)
@@ -184,5 +218,15 @@ blockdev_t *get_blockdev(size_t index)
         return NULL;
     }
 
-    return blockdev_new_ref(blockdevs[index]);
+    return blockdevs[index];
+}
+
+inputdev_t *get_inputdev(size_t index)
+{
+    if (index >= inputdevs_size)
+    {
+        return NULL;
+    }
+
+    return inputdevs[index];
 }

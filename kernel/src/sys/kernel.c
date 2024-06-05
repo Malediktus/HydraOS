@@ -1,7 +1,7 @@
 #include <kernel/multiboot2.h>
 #include <kernel/string.h>
 #include <kernel/dev/pci.h>
-#include <kernel/dev/dmm.h>
+#include <kernel/dev/devm.h>
 #include <kernel/kprintf.h>
 #include <kernel/smm.h>
 #include <kernel/isr.h>

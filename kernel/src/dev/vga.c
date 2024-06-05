@@ -35,6 +35,19 @@ static void vga_newline(uint8_t color)
     }
 }
 
+static void vga_backspace(void)
+{
+    if (col <= 0)
+    {
+        // TODO: shift upwards
+        row--;
+        col = NUM_COLS-1;
+        return;
+    }
+
+    col--;
+}
+
 int vga_write(char c, chardev_color_t fg, chardev_color_t bg, chardev_t *cdev)
 {
     if (!cdev)
@@ -47,6 +60,11 @@ int vga_write(char c, chardev_color_t fg, chardev_color_t bg, chardev_t *cdev)
     if (c == '\n')
     {
         vga_newline(color);
+        return 0;
+    }
+    if (c == '\b')
+    {
+        vga_backspace();
         return 0;
     }
     else if (c == '\t')

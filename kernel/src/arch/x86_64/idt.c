@@ -107,6 +107,12 @@ int register_interrupt_handler(uint8_t irq, void (*handler)(interrupt_frame_t *)
 
 void irq_handler(interrupt_frame_t *frame)
 {
+    if (frame->int_no >= 40)
+    {
+        port_byte_out(0xA0, 0x20);
+    }
+    port_byte_out(0x20, 0x20);
+    
     if (interrupt_handlers[frame->int_no] != NULL)
     {
         interrupt_handlers[frame->int_no](frame);
