@@ -106,12 +106,7 @@ int vfs_mount_blockdev(virtual_blockdev_t *vbdev)
         mounts_head->vbdev = vbdev;
         mounts_head->fs = fs;
         mounts_head->fs_data = fs->fs_init(vbdev);
-        mounts_head->id = allocate_mount_id();
-        if (mounts_head->id < 0)
-        {
-            return -1;
-        }
-
+        mounts_head->id = 0;
         mounts_head->next = NULL;
         mounts_head->prev = NULL;
         return mounts_head->id;
@@ -131,7 +126,6 @@ int vfs_mount_blockdev(virtual_blockdev_t *vbdev)
     {
         return -1;
     }
-    mnt->next = new_mount;
 
     new_mount->vbdev = vbdev;
     new_mount->fs = fs;
@@ -144,6 +138,8 @@ int vfs_mount_blockdev(virtual_blockdev_t *vbdev)
 
     new_mount->next = NULL;
     new_mount->prev = mnt;
+    mnt->next = new_mount;
+
     return new_mount->id;
 }
 
@@ -240,7 +236,17 @@ file_node_t *vfs_open(const char *path, uint8_t action)
             return NULL;
         }
 
-        return mnt->fs->fs_open(local_path, action, mnt->vbdev, mnt->fs_data);
+        file_node_t *node = mnt->fs->fs_open(local_path, action, mnt->vbdev, mnt->fs_data);
+        if (!node)
+        {
+            return NULL;
+        }
+
+        strncpy(node->local_path, local_path, MAX_PATH);
+        node->mount_id = id;
+        node->fs = mnt->fs;
+        node->offset = 0;
+        return node;
     }
 
     return NULL;
@@ -309,9 +315,51 @@ int vfs_write(file_node_t *node, size_t size, const uint8_t *buf)
     return -1;
 }
 
-int vfs_readdir(file_node_t *node, dirent_t *dirent)
+static void int_to_string(int num, char *str)
 {
-    if (!node)
+    if (num == 0)
+    {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
+
+    int is_negative = 0;
+    if (num < 0)
+    {
+        is_negative = 1;
+        num = -num;
+    }
+
+    int index = 0;
+    while (num > 0)
+    {
+        int digit = num % 10;
+        str[index++] = '0' + digit;
+        num /= 10;
+    }
+
+    if (is_negative)
+    {
+        str[index++] = '-';
+    }
+
+    int i = 0, j = index - 1;
+    while (i < j)
+    {
+        char temp = str[i];
+        str[i] = str[j];
+        str[j] = temp;
+        i++;
+        j--;
+    }
+
+    str[index] = '\0';
+}
+
+int vfs_readdir(file_node_t *node, int index, dirent_t *dirent)
+{
+    if (!node || !dirent)
     {
         return -1;
     }
@@ -324,7 +372,18 @@ int vfs_readdir(file_node_t *node, dirent_t *dirent)
             continue;
         }
 
-        return mnt->fs->fs_readdir(node, dirent, mnt->vbdev, mnt->fs_data);
+        char int_str[12];
+        int_to_string(node->mount_id, int_str);
+        size_t int_str_len = strlen(int_str);
+        strcpy(dirent->path, int_str);
+        dirent->path[int_str_len] = ':';
+
+        if (mnt->fs->fs_readdir(node, index, (char *)((uintptr_t)dirent->path + int_str_len + 1), mnt->vbdev, mnt->fs_data) < 0)
+        {
+            return -1;
+        }
+
+        return 0;
     }
 
     return -1;

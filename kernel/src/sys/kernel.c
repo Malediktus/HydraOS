@@ -9,8 +9,10 @@
 #include <kernel/vmm.h>
 #include <kernel/kmm.h>
 #include <kernel/fs/vpt.h>
+#include <kernel/fs/vfs.h>
 
 extern partition_table_t mbr_partition_table;
+extern filesystem_t fat32_filesystem;
 
 typedef struct
 {
@@ -227,6 +229,12 @@ void kmain(uint64_t multiboot2_struct_addr)
         while (1);
     }
 
+    if (register_filesystem(&fat32_filesystem) < 0)
+    {
+        kprintf("\x1b[31mfailed to register fat32 filesystem\n");
+        while (1);
+    }
+
     size_t i = 0;
     blockdev_t *bdev = get_blockdev(i);
     while (bdev)
@@ -240,17 +248,42 @@ void kmain(uint64_t multiboot2_struct_addr)
             continue;
         }
 
-        for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
         {
-            virtual_blockdev_t *part = get_virtual_blockdev(bdev, i);
+            virtual_blockdev_t *part = get_virtual_blockdev(bdev, j);
             if (!part)
             {
                 break;
             }
+            if (part->type == 0x83)
+            {
+                if (vfs_mount_blockdev(part) < 0)
+                {
+                    kprintf("\x1b[31mfailed to mount partition\n");
+                    while (1);
+                }
+                kprintf("mounted\n");
+            }
+
             kprintf(" - parititon type: 0x%x\n", part->type);
         }
 
         bdev = get_blockdev(i++);
+    }
+
+    file_node_t *node = vfs_open("0:/", OPEN_ACTION_READ);
+    if (!node)
+    {
+        kprintf("\x1b[31mfailed to open directory\n");
+        while (1);
+    }
+
+    dirent_t dirent;
+    int idx = 0;
+    while (vfs_readdir(node, idx, &dirent) >= 0)
+    {
+        kprintf("%s\n", dirent.path);
+        idx++;
     }
 
     kprintf("initializing the kernel\n");

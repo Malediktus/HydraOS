@@ -1,7 +1,8 @@
 #include <kernel/string.h>
+#include <kernel/kmm.h>
 #include <stdbool.h>
 
-#define LONG_MAX ((long)(~0UL>>1))
+#define LONG_MAX ((long)(~0UL >> 1))
 #define LONG_MIN (~LONG_MAX)
 
 size_t strlen(const char *str)
@@ -24,6 +25,29 @@ int strcmp(const char *s1, const char *s2)
     return *(const uint8_t *)s1 - *(const uint8_t *)s2;
 }
 
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+    if (n == 0)
+        return (0);
+    do
+    {
+        if (*s1 != *s2++)
+            return (*(unsigned char *)s1 - *(unsigned char *)--s2);
+        if (*s1++ == 0)
+            break;
+    } while (--n != 0);
+    return (0);
+}
+
+char *strcpy(char *to, char *from)
+{
+    char *save = to;
+
+    for (; *to = *from; ++from, ++to)
+        ;
+    return (save);
+}
+
 void *memset(void *dest, register int val, register size_t len)
 {
     register unsigned char *ptr = (unsigned char *)dest;
@@ -34,7 +58,7 @@ void *memset(void *dest, register int val, register size_t len)
     return dest;
 }
 
-void memcpy(void *dest, void *src, size_t len)
+void memcpy(void *dest, const void *src, size_t len)
 {
     char *csrc = (char *)src;
     char *cdest = (char *)dest;
@@ -235,15 +259,143 @@ long strtol(const char *nPtr, char **endPtr, int base)
 
 char *strchr(const char *p, int ch)
 {
-	char c;
+    char c;
 
-	c = ch;
-	for (;; ++p) {
-		if (*p == c)
-			return ((char *)p);
-		if (*p == '\0')
-			return (NULL);
-	}
-    
-	return NULL;
+    c = ch;
+    for (;; ++p)
+    {
+        if (*p == c)
+            return ((char *)p);
+        if (*p == '\0')
+            return (NULL);
+    }
+
+    return NULL;
+}
+
+void *memrchr(const void *s, int c, size_t n)
+{
+    const unsigned char *sp = (const unsigned char *)s + n - 1;
+
+    while (n--)
+    {
+        if (*sp == (unsigned char)c)
+            return (void *)sp;
+        sp--;
+    }
+
+    return NULL;
+}
+
+bool is_delim(char c, char *delim)
+{
+    while (*delim != '\0')
+    {
+        if (c == *delim)
+            return true;
+        delim++;
+    }
+    return false;
+}
+
+char *strtok(char *s, char *delim)
+{
+    static char *p;
+    if (!s)
+    {
+        s = p;
+    }
+    if (!s)
+    {
+        return NULL;
+    }
+
+    while (1)
+    {
+        if (is_delim(*s, delim))
+        {
+            s++;
+            continue;
+        }
+        if (*s == '\0')
+        {
+            return NULL;
+        }
+        break;
+    }
+
+    char *ret = s;
+    while (1)
+    {
+        if (*s == '\0')
+        {
+            p = s;
+            return ret;
+        }
+        if (is_delim(*s, delim))
+        {
+            *s = '\0';
+            p = s + 1;
+            return ret;
+        }
+        s++;
+    }
+}
+
+char *strrchr(const char *str, int ch)
+{
+    char *result = NULL;
+    while (*str != '\0')
+    {
+        if (*str == ch)
+            result = (char *)str;
+        str++;
+    }
+    if (ch == '\0')
+        result = (char *)str;
+    return result;
+}
+
+int tolower(int c)
+{
+    if (c >= 'A' && c <= 'Z')
+        return c + ('a' - 'A');
+    return c;
+}
+
+char *strdup(const char *s1)
+{
+    char *str;
+    size_t size = strlen(s1) + 1;
+
+    str = kmalloc(size);
+    if (str)
+    {
+        memcpy(str, s1, size);
+    }
+    return str;
+}
+
+int toupper(int c)
+{
+    if (c >= 'a' && c <= 'z')
+        return c - ('a' - 'A');
+    return c;
+}
+
+int isalnum(int c)
+{
+    return isalpha(c) || (c >= '0' && c <= '9');
+}
+
+char *strncpy(char *dest, const char *src, size_t n)
+{
+    char *d = dest;
+    const char *s = src;
+    size_t i;
+    for (i = 0; i < n && *s != '\0'; i++)
+        *d++ = *s++;
+    for (; i < n; i++)
+        *d++ = '\0';
+    return dest;
 }
