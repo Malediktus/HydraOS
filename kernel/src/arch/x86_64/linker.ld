@@ -3,6 +3,7 @@ ENTRY(_start)
 
 SECTIONS {
     . = 1M;
+    __kernel_start = .;
 
     .multiboot : {
         KEEP(*(.multiboot))
@@ -29,5 +30,5 @@ SECTIONS {
         *(.eh_frame)
     }
 
-    end = .;
+    __kernel_end = .;
 }

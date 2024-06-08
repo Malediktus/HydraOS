@@ -11,6 +11,9 @@
 #include <kernel/fs/vpt.h>
 #include <kernel/fs/vfs.h>
 
+extern int __kernel_start;
+extern int __kernel_end;
+
 extern partition_table_t mbr_partition_table;
 extern filesystem_t fat32_filesystem;
 
@@ -158,6 +161,8 @@ static int parse_multiboot2_structure(uint64_t multiboot2_struct_addr, boot_info
     return 0;
 }
 
+void jump_usermode();
+
 void kmain(uint64_t multiboot2_struct_addr)
 {
     boot_info_t boot_info = {0};
@@ -196,7 +201,8 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    if (kmm_init(kernel_pml4, (get_max_addr() + PAGE_SIZE - 1) / PAGE_SIZE, 8 * PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
+    page_table_t *user_pt = pmm_alloc();
+    if (kmm_init(user_pt, kernel_pml4, (get_max_addr() + PAGE_SIZE - 1) / PAGE_SIZE, 8 * PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
     {
         return;
     }
@@ -287,6 +293,40 @@ void kmain(uint64_t multiboot2_struct_addr)
     }
 
     kprintf("initializing the kernel\n");
+
+    //page_table_t *user_pt = pmm_alloc();
+    for (uintptr_t i = (uintptr_t)&__kernel_start; i < (uintptr_t)&__kernel_end; i += PAGE_SIZE)
+    {
+        if (pml4_map(user_pt, (void *)i, (void *)i, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
+        {
+            kprintf("\x1b[31mfailed to map user data\n");
+            while (1);
+        }
+    }
+
+    uint8_t *data = pmm_alloc();
+    data[0] = 0xEB;
+    data[1] = 0xFE;
+
+    if (pml4_map(user_pt, (void *)0xB8000, (void *)0xB8000, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
+    {
+        kprintf("\x1b[31mfailed to map user data\n");
+        while (1);
+    }
+
+    if (pml4_map(user_pt, (void *)0x400000, data, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
+    {
+        kprintf("\x1b[31mfailed to map user data\n");
+        while (1);
+    }
+
+    pml4_switch(user_pt);
+
+    uint8_t *ptr = (uint8_t *)0x400000;
+    kprintf("ptr: 0x%x 0x%x\n", ptr[0], ptr[1]);
+
+    jump_usermode();
+
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
 
     while (1);

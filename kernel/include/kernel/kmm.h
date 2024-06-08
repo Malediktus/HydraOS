@@ -7,7 +7,7 @@
 
 #include <kernel/vmm.h>
 
-int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t alignment);
+int kmm_init(page_table_t *user, page_table_t *kernel_pml4, uint64_t base, size_t size, size_t alignment);
 void *kmalloc(size_t size);
 void kfree(void *ptr);
 

@@ -108,7 +108,7 @@ buddy_node_t *head;
 buddy_node_t *tail;
 size_t alignment;
 
-int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t _alignment)
+int kmm_init(page_table_t *user, page_table_t *kernel_pml4, uint64_t base, size_t size, size_t _alignment)
 {
     if (!kernel_pml4 || base == 0 || (size & (size - 1)) != 0 || (_alignment & (_alignment - 1)) != 0)
     {
@@ -134,6 +134,11 @@ int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t _alig
         }
 
         if (pml4_map(kernel_pml4, (void *)(base + i * PAGE_SIZE), page, PAGE_PRESENT | PAGE_WRITABLE) < 0)
+        {
+            return -1;
+        }
+
+        if (pml4_map(user, (void *)(base + i * PAGE_SIZE), page, PAGE_PRESENT | PAGE_WRITABLE) < 0)
         {
             return -1;
         }
