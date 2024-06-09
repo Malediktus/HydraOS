@@ -138,7 +138,7 @@ int kmm_init(page_table_t *user, page_table_t *kernel_pml4, uint64_t base, size_
             return -1;
         }
 
-        if (pml4_map(user, (void *)(base + i * PAGE_SIZE), page, PAGE_PRESENT | PAGE_WRITABLE) < 0)
+        if (pml4_map(user, (void *)(base + i * PAGE_SIZE), page, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
         {
             return -1;
         }

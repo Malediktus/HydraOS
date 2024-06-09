@@ -12,7 +12,7 @@ jump_usermode:
 
     mov rcx, 0x400000        ; first argument, new instruction pointer
     mov rsp, rbp        ; second argument, new stack pointer
-    mov r11, 0x0200     ; eflags
+    mov r11, 0x202     ; eflags
 
     mov ax, 0x1b
     mov ds, ax
