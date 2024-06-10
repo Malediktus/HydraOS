@@ -163,6 +163,8 @@ static int parse_multiboot2_structure(uint64_t multiboot2_struct_addr, boot_info
 
 void jump_usermode();
 
+page_table_t *kernel_pml4 = NULL;
+
 void kmain(uint64_t multiboot2_struct_addr)
 {
     boot_info_t boot_info = {0};
@@ -181,7 +183,7 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
     
-    page_table_t *kernel_pml4 = pmm_alloc();
+    kernel_pml4 = pmm_alloc();
     if (!kernel_pml4)
     {
         return;
@@ -305,8 +307,8 @@ void kmain(uint64_t multiboot2_struct_addr)
     }
 
     uint8_t *data = pmm_alloc();
-    data[0] = 0xCD;
-    data[1] = 0x03;
+    data[0] = 0x0F;
+    data[1] = 0x05;
     data[2] = 0xEB;
     data[3] = 0xFC;
 
@@ -332,4 +334,16 @@ void kmain(uint64_t multiboot2_struct_addr)
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
 
     while (1);
+}
+
+void syscall_handler_c(void)
+{
+    if (pml4_switch(kernel_pml4) < 0)
+    {
+        return; // TODO: panic
+    }
+
+    kprintf("received syscall\n");
+
+    // TODO: switch back to user pml4
 }

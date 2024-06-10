@@ -2,6 +2,9 @@
 #include <kernel/smm.h>
 #include <kernel/kprintf.h>
 #include <kernel/port.h>
+#include <kernel/vmm.h>
+
+extern page_table_t *kernel_pml4;
 
 #define INTERRUPT_GATE 0x8E
 #define INTERRUPT_TRAP 0x8F
@@ -107,6 +110,11 @@ int register_interrupt_handler(uint8_t irq, void (*handler)(interrupt_frame_t *)
 
 void irq_handler(interrupt_frame_t *frame)
 {
+    if (pml4_switch(kernel_pml4) < 0)
+    {
+        return; // TODO: panic
+    }
+
     if (frame->int_no >= 40)
     {
         port_byte_out(0xA0, 0x20);
@@ -151,6 +159,11 @@ char *exception_names[] = {
 
 void exception_handler(interrupt_frame_t *frame)
 {
+    if (pml4_switch(kernel_pml4) < 0)
+    {
+        return; // TODO: panic
+    }
+
     kprintf("\x1b[41mCPU exception triggered\n\n[Exception Info]\nType: %s\n", exception_names[frame->int_no]);
     switch (frame->int_no)
     {
