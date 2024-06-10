@@ -305,8 +305,10 @@ void kmain(uint64_t multiboot2_struct_addr)
     }
 
     uint8_t *data = pmm_alloc();
-    data[0] = 0xEB;
-    data[1] = 0xFE;
+    data[0] = 0xCD;
+    data[1] = 0x03;
+    data[2] = 0xEB;
+    data[3] = 0xFC;
 
     if (pml4_map(user_pt, (void *)0xB8000, (void *)0xB8000, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
     {

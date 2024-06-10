@@ -4,6 +4,7 @@ section .text
 %define STACK_SIZE (4096 * 4)
 
 global _start
+global stack
 extern kmain
 
 _start:

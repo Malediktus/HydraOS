@@ -88,6 +88,7 @@ __attribute((aligned(0x1000))) gdt_entry_t gdt[7]; // the tss segments counts as
 __attribute((aligned(0x1000))) gdt_ptr_t gdt_ptr;
 
 extern void load_gdt(gdt_ptr_t *); // defined int gdt.asm
+extern uint8_t *stack;
 
 int segmentation_init(void)
 {
@@ -99,6 +100,7 @@ int segmentation_init(void)
     populate_gdt_entry(&gdt[4], 0, 0xFFFFF, ACCESS_PRESENT | ACCESS_PRIVILEGE_RING3 | ACCESS_SEGMENT | ACCESS_READ_WRITE | ACCESS_EXECUTABLE, FLAG_LONG_MODE | FLAG_GRANULARITY);
 
     memset(&tss, 0, sizeof(tss_t));
+    tss.rsp0 = (uint64_t)stack;
 
     populate_long_mode_segment_descriptor(&gdt[5], (uint64_t)&tss, sizeof(tss_t) - 1, ACCESS_PRESENT | ACCESS_PRIVILEGE_RING0 | ACCESS_EXECUTABLE | ACCESS_ACCESSED, 0);
 
