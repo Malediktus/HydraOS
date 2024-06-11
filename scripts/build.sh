@@ -5,13 +5,26 @@ set -e
 DIR="`dirname "${BASH_SOURCE[0]}"`"
 cd "$DIR" || exit
 
-pushd ../kernel
-    make build/kernel.elf
-popd
-
 mkdir -p /tmp/hydra_root/
 mkdir -p /tmp/hydra_root/boot/grub
-cp ../kernel/build/kernel.elf /tmp/hydra_root/boot/hydrakernel
+mkdir -p /tmp/hydra_root/bin
+
+pushd ../kernel
+	echo "Compiling Kernel"
+	make build/kernel.elf
+	cp build/kernel.elf /tmp/hydra_root/boot/hydrakernel
+popd
+
+for dir in ../apps/*/; do
+	if [ -d "$dir" ]; then
+		pushd $dir
+			app=$(basename "$dir")
+			echo "Compiling $app"
+			make build/$app.bin
+			cp build/$app.bin /tmp/hydra_root/bin/$app.bin
+		popd
+	fi
+done
 
 cat > /tmp/hydra_root/boot/grub/grub.cfg << EOF
 set timeout=0

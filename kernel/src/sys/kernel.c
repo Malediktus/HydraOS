@@ -10,6 +10,7 @@
 #include <kernel/kmm.h>
 #include <kernel/fs/vpt.h>
 #include <kernel/fs/vfs.h>
+#include <kernel/proc/task.h>
 
 extern partition_table_t mbr_partition_table;
 extern filesystem_t fat32_filesystem;
@@ -158,6 +159,8 @@ static int parse_multiboot2_structure(uint64_t multiboot2_struct_addr, boot_info
     return 0;
 }
 
+page_table_t *kernel_pml4 = NULL;
+
 void kmain(uint64_t multiboot2_struct_addr)
 {
     boot_info_t boot_info = {0};
@@ -176,7 +179,7 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
     
-    page_table_t *kernel_pml4 = pmm_alloc();
+    kernel_pml4 = pmm_alloc();
     if (!kernel_pml4)
     {
         return;
@@ -271,23 +274,20 @@ void kmain(uint64_t multiboot2_struct_addr)
         bdev = get_blockdev(i++);
     }
 
-    file_node_t *node = vfs_open("0:/", OPEN_ACTION_READ);
-    if (!node)
-    {
-        kprintf("\x1b[31mfailed to open directory\n");
-        while (1);
-    }
-
-    dirent_t dirent;
-    int idx = 0;
-    while (vfs_readdir(node, idx, &dirent) >= 0)
-    {
-        kprintf("%s\n", dirent.path);
-        idx++;
-    }
-
     kprintf("initializing the kernel\n");
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
 
+    kprintf("starting user program...\n");
+    process_t *proc = process_start("0:/bin/program.bin");
+    if (!proc)
+    {
+        kprintf("\x1b[31mfailed to load '0:/bin/program.bin'\n");
+        while (1);
+    }
+
+    syscall_init();
+    execute_process(proc);
+
+    kprintf("\x1b[31mfailed to launch '0:/bin/program.bin'\n");
     while (1);
 }
