@@ -138,6 +138,20 @@ process_t *process_start(const char *path)
         }
     }
 
+    if (pml4_map(proc->pml4, (void *)(PROCESS_STACK_VADDR - PAGE_SIZE), proc->task->stack, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
+    {
+        for (size_t i = 0; i < num_data_pages; i++)
+        {
+            pmm_free(data_pages[i]);
+        }
+        kfree(data_pages);
+        pmm_free((uint64_t *)proc->pml4);
+        pmm_free(proc->task->stack);
+        kfree(proc->task);
+        kfree(proc);
+        return NULL;
+    }
+
     if (pml4_map(proc->pml4, (void *)PROCESS_STACK_VADDR, proc->task->stack, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
     {
         for (size_t i = 0; i < num_data_pages; i++)

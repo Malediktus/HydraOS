@@ -2,11 +2,9 @@
 
 section .text
 
-global _start
+global syscall
 
-_start:
+syscall:
     mov rax, 52
     syscall
-
-label:
-    jmp label
+    ret

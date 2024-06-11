@@ -2,6 +2,7 @@
 #include <kernel/smm.h>
 #include <kernel/kprintf.h>
 #include <kernel/port.h>
+#include <kernel/proc/task.h>
 
 #define INTERRUPT_GATE 0x8E
 #define INTERRUPT_TRAP 0x8F
@@ -105,8 +106,16 @@ int register_interrupt_handler(uint8_t irq, void (*handler)(interrupt_frame_t *)
     return 0;
 }
 
+extern page_table_t *kernel_pml4;
+
 void irq_handler(interrupt_frame_t *frame)
 {
+    if (pml4_switch(kernel_pml4) < 0)
+    {
+        // TODO: panic
+        while (1);
+    }
+
     if (frame->int_no >= 40)
     {
         port_byte_out(0xA0, 0x20);
@@ -116,6 +125,18 @@ void irq_handler(interrupt_frame_t *frame)
     if (interrupt_handlers[frame->int_no] != NULL)
     {
         interrupt_handlers[frame->int_no](frame);
+    }
+
+    process_t *proc = get_current_process();
+    if (!proc)
+    {
+        return;
+    }
+
+    if (pml4_switch(proc->pml4) < 0)
+    {
+        // TODO: panic
+        while (1);
     }
 }
 
@@ -151,6 +172,12 @@ char *exception_names[] = {
 
 void exception_handler(interrupt_frame_t *frame)
 {
+    if (pml4_switch(kernel_pml4) < 0)
+    {
+        // TODO: panic
+        while (1);
+    }
+
     kprintf("\x1b[41mCPU exception triggered\n\n[Exception Info]\nType: %s\n", exception_names[frame->int_no]);
     switch (frame->int_no)
     {
@@ -205,4 +232,16 @@ void exception_handler(interrupt_frame_t *frame)
     __asm__ volatile("cli");
     __asm__ volatile("hlt");
     while (1);
+
+    process_t *proc = get_current_process();
+    if (!proc)
+    {
+        return;
+    }
+
+    if (pml4_switch(proc->pml4) < 0)
+    {
+        // TODO: panic
+        while (1);
+    }
 }
