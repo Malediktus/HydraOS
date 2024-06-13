@@ -63,10 +63,6 @@ multiboot_entry:
 
     jmp gdt.code:long_mode_start
 
-    ; TODO: give kernel memory info, memory map, framebuffer/console info, cpuid info
-    ; TODO: check if paging is enabled to test if booted from uefi
-    ; TODO: implement 5 level paging
-
 halt:
     cli
     hlt

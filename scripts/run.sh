@@ -7,4 +7,4 @@ cd "$DIR" || exit
 
 source build.sh
 
-qemu-system-x86_64 ../hydraos.img -debugcon file:../kernel.log
+qemu-system-x86_64 ../hydraos.img -debugcon file:../kernel.log -no-shutdown -no-reboot

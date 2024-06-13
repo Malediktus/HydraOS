@@ -20,8 +20,8 @@ for dir in ../apps/*/; do
 		pushd $dir
 			app=$(basename "$dir")
 			echo "Compiling $app"
-			make build/$app.bin
-			cp build/$app.bin /tmp/hydra_root/bin/$app.bin
+			make build/$app
+			cp build/$app /tmp/hydra_root/bin/$app
 		popd
 	fi
 done

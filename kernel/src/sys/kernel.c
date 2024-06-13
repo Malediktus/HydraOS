@@ -224,8 +224,6 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    enable_interrupts();
-
     if (register_partition_table(&mbr_partition_table) < 0)
     {
         kprintf("\x1b[31mfailed to register mbr partition table\n");
@@ -278,16 +276,16 @@ void kmain(uint64_t multiboot2_struct_addr)
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
 
     kprintf("starting user program...\n");
-    process_t *proc = process_start("0:/bin/program.bin");
+    process_t *proc = process_start("0:/bin/program");
     if (!proc)
     {
-        kprintf("\x1b[31mfailed to load '0:/bin/program.bin'\n");
+        kprintf("\x1b[31mfailed to load '0:/bin/program'\n");
         while (1);
     }
 
     syscall_init();
     execute_process(proc);
 
-    kprintf("\x1b[31mfailed to launch '0:/bin/program.bin'\n");
+    kprintf("\x1b[31mfailed to launch '0:/bin/program'\n");
     while (1);
 }

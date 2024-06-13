@@ -52,12 +52,17 @@ int vfs_unmount_blockdev(int id);
 #define OPEN_ACTION_CLEAR 2
 #define OPEN_ACTION_CREATE 3
 
+#define SEEK_TYPE_SET 0
+#define SEEK_TYPE_ADD 1
+#define SEEK_TYPE_END 2
+
 file_node_t *vfs_open(const char *path, uint8_t action);
 int vfs_close(file_node_t *node);
 int vfs_read(file_node_t *node, size_t size, uint8_t *buf);
 int vfs_write(file_node_t *node, size_t size, const uint8_t *buf);
 int vfs_readdir(file_node_t *node, int index, dirent_t *dirent);
 int vfs_delete(file_node_t *node); // doesnt close node
+int vfs_seek(file_node_t *node, size_t n, uint8_t type);
 
 typedef struct _filesystem
 {

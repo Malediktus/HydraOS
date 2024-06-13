@@ -6,6 +6,7 @@ extern rsp0_stack
 %define STACK_SIZE 4096*4
 
 syscall_wrapper:
+    cli
     mov rbp, rsp
     mov rsp, rsp0_stack + STACK_SIZE
 

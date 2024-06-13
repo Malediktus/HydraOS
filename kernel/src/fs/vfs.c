@@ -409,3 +409,30 @@ int vfs_delete(file_node_t *node)
 
     return -1;
 }
+
+int vfs_seek(file_node_t *node, size_t n, uint8_t type)
+{
+    if (!node)
+    {
+        return -1;
+    }
+
+    if (type == SEEK_TYPE_SET)
+    {
+        node->offset = n;
+    }
+    else if (type == SEEK_TYPE_ADD)
+    {
+        node->offset += n;
+    }
+    else if (type == SEEK_TYPE_END)
+    {
+        node->offset = node->filesize - n;
+    }
+    else
+    {
+        return -1;
+    }
+
+    return 0;
+}
