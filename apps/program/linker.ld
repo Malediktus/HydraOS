@@ -5,6 +5,7 @@ ENTRY(_start)
 SECTIONS
 {
     . = 0x400000;
+
     .text BLOCK(4K) : ALIGN(4K) {
         *(.text)
     }
@@ -22,8 +23,11 @@ SECTIONS
         *(COMMON)
     }
 
+    .init BLOCK(4K) : ALIGN(4K) {
+        *(.init)
+    }
+
     /DISCARD/ : {
-        *(.eh_frame)
         *(.eh_frame)
         *(.note .note.*)
         *(.note.gnu.build-id)

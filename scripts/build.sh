@@ -8,11 +8,21 @@ cd "$DIR" || exit
 mkdir -p /tmp/hydra_root/
 mkdir -p /tmp/hydra_root/boot/grub
 mkdir -p /tmp/hydra_root/bin
+mkdir -p /tmp/hydra_root/lib
+mkdir -p /tmp/hydra_root/include
 
 pushd ../kernel
 	echo "Compiling Kernel"
 	make build/kernel.elf
 	cp build/kernel.elf /tmp/hydra_root/boot/hydrakernel
+	cp -r include/* /tmp/hydra_root/include/
+popd
+
+pushd ../libc
+	echo "Compiling Libc"
+	make build/libc.a
+	cp build/libc.a /tmp/hydra_root/lib/libc.a
+	cp -r include/* /tmp/hydra_root/include/
 popd
 
 for dir in ../apps/*/; do
@@ -20,7 +30,7 @@ for dir in ../apps/*/; do
 		pushd $dir
 			app=$(basename "$dir")
 			echo "Compiling $app"
-			make build/$app
+			make build/$app ROOT=/tmp/hydra_root/
 			cp build/$app /tmp/hydra_root/bin/$app
 		popd
 	fi
@@ -58,5 +68,3 @@ sudo grub-install --root-directory=/mnt --no-floppy --modules="normal part_msdos
 sudo umount /mnt
 sudo losetup -d /dev/loop0
 sudo losetup -d /dev/loop1
-
-# grub-mkrescue -o ../hydraos.iso /tmp/hydra_root/

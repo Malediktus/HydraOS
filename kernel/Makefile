@@ -28,4 +28,4 @@ build/kernel.elf: $(KOBJS)
 	@mkdir -p $(@D)
 	@echo "LD\t$@"
 	@$(LD) $^ -o $@ -T src/arch/$(ARCH)/linker.ld $(LDFLAGS)
-#@grub-file --is-x86-multiboot2 $@
+	@grub-file --is-x86-multiboot2 $@

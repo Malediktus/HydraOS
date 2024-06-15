@@ -40,11 +40,6 @@ static int verify_elf_header(elf_file_t *elf_file)
         return -7;
     }
 
-    if (elf_file->header.e_entry != PROCESS_DATA_VADDR)
-    {
-        return -8;
-    }
-
     return 0;
 }
 
@@ -95,6 +90,8 @@ elf_file_t *elf_load(const char *path)
         elf_free(elf_file);
         return NULL;
     }
+
+    elf_file->entry_addr = elf_file->header.e_entry;
 
     return elf_file;
 }

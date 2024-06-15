@@ -8,7 +8,6 @@
 #include <kernel/fs/vfs.h>
 #include <kernel/proc/elf.h>
 
-#define PROCESS_DATA_VADDR 0x400000
 #define PROCESS_STACK_VADDR 0x800000
 #define PROCESS_STACK_SIZE 4096
 

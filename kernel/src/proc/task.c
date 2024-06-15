@@ -112,19 +112,22 @@ int process_free(process_t *proc)
     return 0;
 }
 
-void task_execute(void);
+void task_execute(uint64_t rip, uint64_t rsp, uint64_t eflags);
 
 process_t *current_process = NULL;
 
 int execute_process(process_t *proc)
 {
+    uint64_t rip = proc->elf->entry_addr; // needs to be copied because proc is allocated and not mapped in processes pml4
+
     current_process = proc;
     if (pml4_switch(proc->pml4) < 0)
     {
         return -1;
     }
 
-    task_execute();
+    // TODO: execute global constructors
+    task_execute(rip, PROCESS_STACK_VADDR, 0x202);
 
     return 0; // never executed
 }

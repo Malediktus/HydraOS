@@ -10,7 +10,6 @@ syscall_wrapper:
     mov rbp, rsp
     mov rsp, rsp0_stack + STACK_SIZE
 
-    push rax
     push rbx
     push rcx
     push rdx
@@ -22,9 +21,17 @@ syscall_wrapper:
     push r10
     push r11
 
-    mov rcx, r11 ; System V calling convention
+    mov rcx, rdx
+    mov rdx, rsi
+    mov rsi, rdi
+    mov rdi, rax
+    push qword r9
+    mov r9, r8
+    mov r8, r10
 
     call syscall_handler
+
+    pop qword r9
 
     pop r11
     pop r10
@@ -36,7 +43,6 @@ syscall_wrapper:
     pop rdx
     pop rcx
     pop rbx
-    pop rax
 
     mov rsp, rbp
 
@@ -65,8 +71,8 @@ syscall_init:
     ret
 
 task_execute:
-    mov rcx, 0x400000 ; instruction pointer
-    mov rsp, 0x800000 ; new stack pointer
-    mov r11, 0x202 ; eflags
+    mov rcx, rdi ; instruction pointer
+    mov rsp, rsi ; new stack pointer
+    mov r11, rdx ; eflags
 
     o64 sysret
