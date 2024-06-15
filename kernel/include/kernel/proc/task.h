@@ -8,15 +8,16 @@
 #include <kernel/fs/vfs.h>
 #include <kernel/proc/elf.h>
 
-#define PROCESS_STACK_VADDR 0x800000
-#define PROCESS_STACK_SIZE 4096
+#define PROCESS_STACK_VADDR_BASE 0x800000
+#define PROCESS_STACK_SIZE 4096 * 3
 
 struct _process;
 
 typedef struct _task
 {
     struct _process *parent;
-    void *stack; // physical addresses
+    void **stack_pages; // physical addresses
+    size_t num_stack_pages;
 } task_t;
 
 typedef struct _process
@@ -26,8 +27,8 @@ typedef struct _process
 
     char path[MAX_PATH];
     page_table_t *pml4;
-    size_t num_data_pages;
     void **data_pages; // physical addresses
+    size_t num_data_pages;
 } process_t;
 
 void syscall_init(void);
