@@ -33,7 +33,7 @@ int pml4_map(page_table_t *pml4, void *virt, void *phys, uint64_t flags)
             return -1;
         }
         memset(pdpt, 0, PAGE_SIZE);
-        pml4->entries[pml4_index] = (uint64_t)pdpt | flags;
+        pml4->entries[pml4_index] = (uint64_t)pdpt | (PAGE_PRESENT | PAGE_USER | PAGE_WRITABLE);
     }
 
     entry = pdpt->entries[pdpt_index];
@@ -46,7 +46,7 @@ int pml4_map(page_table_t *pml4, void *virt, void *phys, uint64_t flags)
             return -1;
         }
         memset(pd, 0, PAGE_SIZE);
-        pdpt->entries[pdpt_index] = (uint64_t)pd | flags;
+        pdpt->entries[pdpt_index] = (uint64_t)pd | (PAGE_PRESENT | PAGE_USER | PAGE_WRITABLE);
     }
 
     entry = pd->entries[pd_index];
@@ -59,7 +59,7 @@ int pml4_map(page_table_t *pml4, void *virt, void *phys, uint64_t flags)
             return -1;
         }
         memset(pt, 0, PAGE_SIZE);
-        pd->entries[pd_index] = (uint64_t)pt | flags;
+        pd->entries[pd_index] = (uint64_t)pt | (PAGE_PRESENT | PAGE_USER | PAGE_WRITABLE);
     }
 
     pt->entries[pt_index] = phys_addr | flags;

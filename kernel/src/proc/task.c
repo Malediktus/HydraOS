@@ -51,7 +51,7 @@ process_t *process_start(const char *path)
 
     for (uintptr_t i = (uintptr_t)&__kernel_start; i < (uintptr_t)&__kernel_end; i += PAGE_SIZE)
     {
-        if (pml4_map(proc->pml4, (void *)i, (void *)i, PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
+        if (pml4_map(proc->pml4, (void *)i, (void *)i, PAGE_PRESENT | PAGE_WRITABLE) < 0)
         {
             elf_free(proc->elf);
             pmm_free((uint64_t *)proc->pml4);
