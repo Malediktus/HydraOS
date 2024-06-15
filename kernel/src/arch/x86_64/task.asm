@@ -71,8 +71,32 @@ syscall_init:
     ret
 
 task_execute:
-    mov rcx, rdi ; instruction pointer
-    mov rsp, rsi ; new stack pointer
-    mov r11, rdx ; eflags
+    push qword 0x1b
+    push qword rsi
+    push qword rdx
+    push qword 0x23
+    push qword rdi
 
-    o64 sysret
+    mov rdi, rcx
+    call task_restore_state
+
+    iretq
+
+task_restore_state:
+    mov r15, [rdi]
+    mov r14, [rdi+8]
+    mov r12, [rdi+16]
+    mov r11, [rdi+24]
+    mov r10, [rdi+32]
+    mov r9, [rdi+40]
+    mov r8, [rdi+48]
+    mov rsi, [rdi+56]
+    mov rbp, [rdi+72]
+    mov rdx, [rdi+80]
+    mov rcx, [rdi+88]
+    mov rbx, [rdi+96]
+    mov rax, [rdi+104]
+    
+    mov rdi, [rdi+64]
+
+    ret

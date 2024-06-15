@@ -5,7 +5,7 @@
 extern int __kernel_start;
 extern int __kernel_end;
 
-process_t *process_start(const char *path)
+process_t *process_create(const char *path)
 {
     process_t *proc = kmalloc(sizeof(process_t));
     if (!proc)
@@ -27,6 +27,8 @@ process_t *process_start(const char *path)
         kfree(proc);
         return NULL;
     }
+
+    memset(&proc->task->state, 0, sizeof(task_state_t));
 
     strncpy(proc->path, path, MAX_PATH);
     proc->pml4 = pmm_alloc();
@@ -99,6 +101,9 @@ process_t *process_start(const char *path)
         return NULL;
     }
 
+    proc->task->state.rsp = PROCESS_STACK_VADDR_BASE + PROCESS_STACK_SIZE;
+    proc->next = NULL;
+
     return proc;
 }
 
@@ -123,27 +128,90 @@ int process_free(process_t *proc)
     return 0;
 }
 
-void task_execute(uint64_t rip, uint64_t rsp, uint64_t eflags);
+process_t *proc_head = NULL;
+process_t *current_proc = NULL;
 
-process_t *current_process = NULL;
-
-int execute_process(process_t *proc)
+int process_register(process_t *proc)
 {
-    uint64_t rip = proc->elf->entry_addr; // needs to be copied because proc is allocated and not mapped in processes pml4
+    if (!proc_head)
+    {
+        proc_head = proc;
+        return 0;
+    }
 
-    current_process = proc;
-    if (pml4_switch(proc->pml4) < 0)
+    process_t *tail = NULL;
+    for (tail = proc_head; tail->next != NULL; tail = tail->next);
+    if (!tail)
+    {
+        return -1;
+    }
+
+    tail->next = proc;
+
+    return 0;
+}
+
+int process_unregister(process_t *proc)
+{
+    if (!proc_head)
+    {
+        proc_head = proc;
+        return -1;
+    }
+
+    if (current_proc == proc)
+    {
+        current_proc = NULL;
+    }
+
+    for (process_t *tail = proc_head; tail->next != NULL; tail = tail->next)
+    {
+        if (tail->next == proc)
+        {
+            tail->next = proc->next;
+            return 0;
+        }
+    }
+
+    return -1; // not found
+}
+
+void task_execute(uint64_t rip, uint64_t rsp, uint64_t eflags, task_state_t *state);
+
+int execute_next_process(void)
+{
+    if (!proc_head)
+    {
+        return -1;
+    }
+
+    if (!current_proc)
+    {
+        current_proc = proc_head;
+    }
+    else
+    {
+        current_proc = current_proc->next;
+        if (!current_proc)
+        {
+            current_proc = proc_head;
+        }
+    }
+
+    task_state_t state = current_proc->task->state; // needs to be copied because proc is allocated and not mapped in processes pml4
+
+    if (pml4_switch(current_proc->pml4) < 0)
     {
         return -1;
     }
 
     // TODO: execute global constructors
-    task_execute(rip, PROCESS_STACK_VADDR_BASE + PROCESS_STACK_SIZE, 0x202);
+    task_execute(state.rip, state.rsp, 0x202, &state);
 
     return 0; // never executed
 }
 
 process_t *get_current_process(void)
 {
-    return current_process;
+    return current_proc;
 }

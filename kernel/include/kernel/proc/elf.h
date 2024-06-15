@@ -167,7 +167,6 @@ typedef struct
     file_node_t *node;
     Elf64_Ehdr header;
     Elf64_Phdr *program_header_table;
-    uint64_t entry_addr;
 } elf_file_t;
 
 struct _process;

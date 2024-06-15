@@ -5,6 +5,8 @@ set -e
 DIR="`dirname "${BASH_SOURCE[0]}"`"
 cd "$DIR" || exit
 
+rm -rf /tmp/hydra_root | true
+
 mkdir -p /tmp/hydra_root/
 mkdir -p /tmp/hydra_root/boot/grub
 mkdir -p /tmp/hydra_root/bin

@@ -11,6 +11,7 @@
 #include <kernel/fs/vpt.h>
 #include <kernel/fs/vfs.h>
 #include <kernel/proc/task.h>
+#include <kernel/proc/scheduler.h>
 
 extern partition_table_t mbr_partition_table;
 extern filesystem_t fat32_filesystem;
@@ -276,15 +277,38 @@ void kmain(uint64_t multiboot2_struct_addr)
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
 
     kprintf("starting user program...\n");
-    process_t *proc = process_start("0:/bin/program");
+    process_t *proc = process_create("0:/bin/program");
     if (!proc)
     {
         kprintf("\x1b[31mfailed to load '0:/bin/program'\n");
         while (1);
     }
+    if (process_register(proc) < 0)
+    {
+        kprintf("\x1b[31mfailed to register process\n");
+        while (1);
+    }
+
+    process_t *proc2 = process_create("0:/bin/program");
+    if (!proc2)
+    {
+        kprintf("\x1b[31mfailed to load '0:/bin/program'\n");
+        while (1);
+    }
+    if (process_register(proc2) < 0)
+    {
+        kprintf("\x1b[31mfailed to register process\n");
+        while (1);
+    }
+
+    if (scheduler_init() < 0)
+    {
+        kprintf("\x1b[31mfailed init scheduler\n");
+        while (1);
+    }
 
     syscall_init();
-    execute_process(proc);
+    execute_next_process();
 
     kprintf("\x1b[31mfailed to launch '0:/bin/program'\n");
     while (1);

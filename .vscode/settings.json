@@ -15,6 +15,7 @@
         "blockdev.h": "c",
         "vpt.h": "c",
         "vfs.h": "c",
-        "syscall.h": "c"
+        "syscall.h": "c",
+        "scheduler.h": "c"
     }
 }

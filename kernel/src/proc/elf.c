@@ -91,8 +91,6 @@ elf_file_t *elf_load(const char *path)
         return NULL;
     }
 
-    elf_file->entry_addr = elf_file->header.e_entry;
-
     return elf_file;
 }
 
@@ -197,6 +195,8 @@ int elf_setup_exec(elf_file_t *elf_file, process_t *proc)
             return -1;
         }
     }
+
+    proc->task->state.rip = elf_file->header.e_entry;
 
     return 0;
 }

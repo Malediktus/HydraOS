@@ -3,32 +3,44 @@ extern exception_handler
 extern irq_handler
 
 %macro pushad 0
-    push rax      
-    push rcx
-    push rdx
-    push rdi
-    push rsi
-    push r8
-    push r9
-    push r10
-    push r11
+    push qword rax
+    push qword rbx
+    push qword rcx
+    push qword rdx
+    push qword rbp
+    push qword rdi
+    push qword rsi
+    push qword r8
+    push qword r9
+    push qword r10
+    push qword r11
+    push qword r12
+    push qword r13
+    push qword r14
+    push qword r15
 %endmacro
 
 %macro popad 0
-    pop r11
-    pop r10
-    pop r9
-    pop r8
-    pop rsi
-    pop rdi
-    pop rdx      
-    pop rcx
-    pop rax
+    pop qword r15
+    pop qword r14
+    pop qword r13
+    pop qword r12
+    pop qword r11
+    pop qword r10
+    pop qword r9
+    pop qword r8
+    pop qword rsi
+    pop qword rdi
+    pop qword rbp
+    pop qword rdx
+    pop qword rcx
+    pop qword rbx
+    pop qword rax
 %endmacro
 
 isr_common_stub:
     pushad
-    cld 
+    cld
     lea rdi, [rsp]
     call exception_handler
     popad
@@ -37,12 +49,14 @@ isr_common_stub:
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
+    cli
     push %1
     jmp isr_common_stub
 %endmacro
 
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
+    cli
     push 0
     push %1
     jmp isr_common_stub
@@ -104,8 +118,8 @@ irq_stub_%+i:
 
 global isr_stub_table
 isr_stub_table:
-%assign i 0 
-%rep    32 
+%assign i 0
+%rep    32
     dq isr_stub_%+i 
     %assign i i+1 
 %endrep
