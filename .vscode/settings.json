@@ -16,6 +16,8 @@
         "vpt.h": "c",
         "vfs.h": "c",
         "syscall.h": "c",
-        "scheduler.h": "c"
+        "scheduler.h": "c",
+        "h_syscall.h": "c",
+        "stream.h": "c"
     }
 }

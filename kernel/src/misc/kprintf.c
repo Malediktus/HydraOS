@@ -994,6 +994,11 @@ void kprintf_free(void)
     chardev_free_ref(kprintf_cdev);
 }
 
+chardev_t *kprintf_get_cdev(void)
+{
+    return kprintf_cdev;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 int kprintf(const char *format, ...)

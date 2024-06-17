@@ -90,6 +90,47 @@ int pml4_map_range(page_table_t *pml4, void *virt, void *phys, size_t num, uint6
     return 0;
 }
 
+uint64_t pml4_get_phys(page_table_t *pml4, void *virt, bool user)
+{
+    uint64_t virt_addr = (uint64_t)virt;
+
+    uint16_t pml4_index = (virt_addr >> 39) & 0x1FF;
+    uint16_t pdpt_index = (virt_addr >> 30) & 0x1FF;
+    uint16_t pd_index = (virt_addr >> 21) & 0x1FF;
+    uint16_t pt_index = (virt_addr >> 12) & 0x1FF;
+
+    uint64_t entry = pml4->entries[pml4_index];
+    if ((entry & PAGE_PRESENT) != PAGE_PRESENT) {
+        return 0;
+    }
+
+    page_table_t *pdpt = (page_table_t *)(entry & ~0xFFF);
+    entry = pdpt->entries[pdpt_index];
+    if ((entry & PAGE_PRESENT) != PAGE_PRESENT) {
+        return 0;
+    }
+
+    page_table_t *pd = (page_table_t *)(entry & ~0xFFF);
+    entry = pd->entries[pd_index];
+    if ((entry & PAGE_PRESENT) != PAGE_PRESENT) {
+        return 0;
+    }
+
+    page_table_t *pt = (page_table_t *)(entry & ~0xFFF);
+    entry = pt->entries[pt_index];
+    if ((entry & PAGE_PRESENT) != PAGE_PRESENT) {
+        return 0;
+    }
+    if ((entry & PAGE_USER) != PAGE_USER && user)
+    {
+        return 0;
+    }
+
+    uint64_t phys_addr = (entry & ~0xFFF) | (virt_addr & 0xFFF);
+
+    return phys_addr;
+}
+
 int pml4_switch(page_table_t *pml4)
 {
     current_page_table = pml4;

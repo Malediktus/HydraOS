@@ -7,6 +7,7 @@
 #include <kernel/vmm.h>
 #include <kernel/fs/vfs.h>
 #include <kernel/proc/elf.h>
+#include <kernel/proc/stream.h>
 
 #define PROCESS_STACK_VADDR_BASE 0x800000
 #define PROCESS_STACK_SIZE 4096 * 3
@@ -37,6 +38,10 @@ typedef struct _process
     page_table_t *pml4;
     void **data_pages; // physical addresses
     size_t num_data_pages;
+
+    stream_t *stdin;
+    stream_t *stdout;
+    stream_t *stderr;
 
     struct _process *next;
 } process_t;

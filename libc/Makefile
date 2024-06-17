@@ -3,7 +3,7 @@ OBJS+=$(patsubst src/%.asm, build/%.asm.o, $(wildcard $(shell find src -name '*.
 
 ARCH:=x86_64
 
-CFLAGS:=-Wall -Wextra -std=c99 -nostdlib -ffreestanding -O0 -g
+CFLAGS:=-Wall -Wextra -nostdlib -ffreestanding -O0 -g
 ASFLAGS:=
 
 CC:=$(ARCH)-elf-gcc

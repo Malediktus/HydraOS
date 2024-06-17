@@ -2,6 +2,7 @@
 #define _KERNEL_VMM_H
 
 #include <stddef.h>
+#include <stdbool.h>
 #include <kernel/pmm.h>
 
 #define PAGE_PRESENT 0x1                 // Present
@@ -24,6 +25,7 @@ typedef struct page_table
 // pml is the virtual address to the pml4
 int pml4_map(page_table_t *pml4, void *virt, void *phys, uint64_t flags);
 int pml4_map_range(page_table_t *pml4, void *virt, void *phys, size_t num, uint64_t flags);
+uint64_t pml4_get_phys(page_table_t *pml4, void *virt, bool user);
 
 // WARNING: pml4 needs to be a physical address
 int pml4_switch(page_table_t *pml4);

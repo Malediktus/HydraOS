@@ -1,9 +1,40 @@
 #include <kernel/proc/task.h>
 #include <kernel/kmm.h>
 #include <kernel/string.h>
+#include <kernel/kprintf.h>
 
 extern int __kernel_start;
 extern int __kernel_end;
+
+static uint8_t stdin_read(device_handle_t handle)
+{
+    inputpacket_t packet;
+    if (inputdev_poll(&packet, handle.idev) < 0)
+    {
+        // TODO: panic
+        while (1);
+    }
+
+    return packet.scancode;
+}
+
+static void stdout_write(uint8_t data, device_handle_t handle)
+{
+    if (chardev_write(data, CHARDEV_COLOR_WHITE, CHARDEV_COLOR_BLACK, handle.cdev))
+    {
+        // TODO: panic
+        while (1);
+    }
+}
+
+static void stderr_write(uint8_t data, device_handle_t handle)
+{
+    if (chardev_write(data, CHARDEV_COLOR_WHITE, CHARDEV_COLOR_BLACK, handle.cdev))
+    {
+        // TODO: panic
+        while (1);
+    }
+}
 
 process_t *process_create(const char *path)
 {
@@ -104,11 +135,117 @@ process_t *process_create(const char *path)
     proc->task->state.rsp = PROCESS_STACK_VADDR_BASE + PROCESS_STACK_SIZE;
     proc->next = NULL;
 
+    device_handle_t stdin_dev;
+    stdin_dev.type = DEVICE_TYPE_INPUTDEV;
+    stdin_dev.idev = get_inputdev(0);
+    if (!stdin_dev.idev)
+    {
+        elf_free(proc->elf);
+        pmm_free((uint64_t *)proc->pml4);
+        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+        {
+            pmm_free(proc->task->stack_pages[i]);
+        }
+        kfree(proc->task->stack_pages);
+        kfree(proc->task);
+        kfree(proc);
+        return NULL;
+    }
+
+    proc->stdin = stream_create_driver(stdin_dev, stdin_read, NULL);
+    if (!proc->stdin)
+    {
+        elf_free(proc->elf);
+        pmm_free((uint64_t *)proc->pml4);
+        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+        {
+            pmm_free(proc->task->stack_pages[i]);
+        }
+        kfree(proc->task->stack_pages);
+        kfree(proc->task);
+        kfree(proc);
+        return NULL;
+    }
+
+    device_handle_t stdout_dev;
+    stdout_dev.type = DEVICE_TYPE_CHARDEV;
+    stdout_dev.cdev = kprintf_get_cdev();
+    if (!stdout_dev.cdev)
+    {
+        stream_free(proc->stdin);
+        elf_free(proc->elf);
+        pmm_free((uint64_t *)proc->pml4);
+        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+        {
+            pmm_free(proc->task->stack_pages[i]);
+        }
+        kfree(proc->task->stack_pages);
+        kfree(proc->task);
+        kfree(proc);
+        return NULL;
+    }
+
+    proc->stdout = stream_create_driver(stdout_dev, NULL, stdout_write);
+    if (!proc->stdout)
+    {
+        stream_free(proc->stdin);
+        elf_free(proc->elf);
+        pmm_free((uint64_t *)proc->pml4);
+        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+        {
+            pmm_free(proc->task->stack_pages[i]);
+        }
+        kfree(proc->task->stack_pages);
+        kfree(proc->task);
+        kfree(proc);
+        return NULL;
+    }
+
+    device_handle_t stderr_dev;
+    stderr_dev.type = DEVICE_TYPE_CHARDEV;
+    stderr_dev.cdev = kprintf_get_cdev();
+    if (!stderr_dev.cdev)
+    {
+        stream_free(proc->stdin);
+        stream_free(proc->stdout);
+        elf_free(proc->elf);
+        pmm_free((uint64_t *)proc->pml4);
+        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+        {
+            pmm_free(proc->task->stack_pages[i]);
+        }
+        kfree(proc->task->stack_pages);
+        kfree(proc->task);
+        kfree(proc);
+        return NULL;
+    }
+
+    proc->stderr = stream_create_driver(stderr_dev, NULL, stderr_write);
+    if (!proc->stderr)
+    {
+        stream_free(proc->stdin);
+        stream_free(proc->stdout);
+        elf_free(proc->elf);
+        pmm_free((uint64_t *)proc->pml4);
+        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+        {
+            pmm_free(proc->task->stack_pages[i]);
+        }
+        kfree(proc->task->stack_pages);
+        kfree(proc->task);
+        kfree(proc);
+        return NULL;
+    }
+
     return proc;
 }
 
 int process_free(process_t *proc)
 {
+    stream_free(proc->stdin);
+    stream_free(proc->stdout);
+    stream_free(proc->stderr);
+
     for (size_t i = 0; i < proc->num_data_pages; i++)
     {
         pmm_free(proc->data_pages[i]);

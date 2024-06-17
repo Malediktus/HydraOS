@@ -6,6 +6,24 @@
 #include <kernel/dev/inputdev.h>
 #include <stddef.h>
 
+typedef enum
+{
+    DEVICE_TYPE_CHARDEV = 0,
+    DEVICE_TYPE_BLOCKDEV = 1,
+    DEVICE_TYPE_INPUTDEV = 2
+} device_handle_type_t;
+
+typedef struct
+{
+    device_handle_type_t type;
+    union
+    {
+        chardev_t *cdev;
+        blockdev_t *bdev;
+        inputdev_t *idev;
+    };
+} device_handle_t;
+
 int init_devices(void);
 void free_devices(void);
 
