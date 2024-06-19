@@ -4,8 +4,9 @@
 #include <kernel/vmm.h>
 #include <kernel/kprintf.h>
 #include <kernel/proc/task.h>
+#include <kernel/string.h>
 
-int64_t syscall_read(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5)
+int64_t syscall_read(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, int64_t, int64_t, int64_t, task_state_t *)
 {
     stream_t *stream = NULL;
     if (arg0 == 0)
@@ -37,7 +38,7 @@ int64_t syscall_read(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, 
     return stream_read(stream, buf, arg2);
 }
 
-int64_t syscall_write(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5)
+int64_t syscall_write(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, int64_t, int64_t, int64_t, task_state_t *)
 {
     stream_t *stream = NULL;
     if (arg0 == 0)
@@ -69,9 +70,37 @@ int64_t syscall_write(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2,
     return stream_write(stream, buf, arg2);
 }
 
+int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *state)
+{
+    process_t *fork = process_create(proc->path); // TODO: maybe the file changed
+    if (!fork)
+    {
+        while (1);
+        // TODO: panic
+    }
+
+    for (size_t i = 0; i < fork->task->num_stack_pages; i++)
+    {
+        memcpy(fork->task->stack_pages[i], proc->task->stack_pages[i], PAGE_SIZE);
+    }
+
+    memcpy(&fork->task->state, state, sizeof(task_state_t));
+
+    fork->task->state.rax = 0; // return value
+    //fork->task->state.rip++;
+
+    if (process_register(fork) < 0)
+    {
+        while (1);
+        // TODO: panic
+    }
+
+    return fork->pid;
+}
+
 extern page_table_t *kernel_pml4;
 
-int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5)
+int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5, task_state_t *state)
 {
     if (pml4_switch(kernel_pml4) < 0)
     {
@@ -90,10 +119,13 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
     switch (num)
     {
     case 0:
-        res = syscall_read(proc, arg0, arg1, arg2, arg3, arg4, arg5);
+        res = syscall_read(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     case 1:
-        res = syscall_write(proc, arg0, arg1, arg2, arg3, arg4, arg5);
+        res = syscall_write(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 2:
+        res = syscall_fork(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     default:
         break;

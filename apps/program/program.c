@@ -11,11 +11,23 @@ void write(uint64_t stream, const uint8_t *buf, size_t len)
     syscall(1, stream, (uint64_t)buf, len, 0, 0, 0);
 }
 
+uint64_t fork(void)
+{
+    return syscall(2, 0, 0, 0, 0, 0, 0);
+}
+
 int main(void)
 {
     const char *str = "Hello User World!\n";
     write(1, str, 18);
 
+    uint64_t pid = fork();
+    if (pid == 0)
+    {
+        write(1, "Forked process\n", 15);
+        while (1);
+    }
+    
     uint8_t c = 0;
     while (1)
     {

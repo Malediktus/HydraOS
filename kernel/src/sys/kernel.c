@@ -289,18 +289,6 @@ void kmain(uint64_t multiboot2_struct_addr)
         while (1);
     }
 
-    process_t *proc2 = process_create("0:/bin/program");
-    if (!proc2)
-    {
-        kprintf("\x1b[31mfailed to load '0:/bin/program'\n");
-        while (1);
-    }
-    if (process_register(proc2) < 0)
-    {
-        kprintf("\x1b[31mfailed to register process\n");
-        while (1);
-    }
-
     if (scheduler_init() < 0)
     {
         kprintf("\x1b[31mfailed init scheduler\n");

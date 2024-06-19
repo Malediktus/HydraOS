@@ -36,6 +36,7 @@ static void stderr_write(uint8_t data, device_handle_t handle)
     }
 }
 
+static uint64_t current_pid = 0;
 process_t *process_create(const char *path)
 {
     process_t *proc = kmalloc(sizeof(process_t));
@@ -236,6 +237,8 @@ process_t *process_create(const char *path)
         kfree(proc);
         return NULL;
     }
+
+    proc->pid = current_pid++;
 
     return proc;
 }

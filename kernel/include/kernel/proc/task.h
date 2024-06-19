@@ -39,6 +39,8 @@ typedef struct _process
     void **data_pages; // physical addresses
     size_t num_data_pages;
 
+    uint64_t pid;
+
     stream_t *stdin;
     stream_t *stdout;
     stream_t *stderr;
