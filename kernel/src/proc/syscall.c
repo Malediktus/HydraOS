@@ -6,18 +6,18 @@
 #include <kernel/proc/task.h>
 #include <kernel/string.h>
 
-int64_t syscall_read(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, int64_t, int64_t, int64_t, task_state_t *)
+int64_t syscall_read(process_t *proc, int64_t _stream, int64_t data, int64_t size, int64_t, int64_t, int64_t, task_state_t *)
 {
     stream_t *stream = NULL;
-    if (arg0 == 0)
+    if (_stream == 0)
     {
         stream = proc->stdin;
     }
-    else if (arg0 == 1)
+    else if (_stream == 1)
     {
         stream = proc->stdout;
     }
-    else if (arg0 == 2)
+    else if (_stream == 2)
     {
         stream = proc->stderr;
     }
@@ -26,8 +26,8 @@ int64_t syscall_read(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, 
         return -1;
     }
 
-    size_t offset = (uint64_t)arg1 % PAGE_SIZE;
-    uint64_t t = (void *)pml4_get_phys(proc->pml4, (void *)((arg1 / PAGE_SIZE) * PAGE_SIZE), true);
+    size_t offset = (uint64_t)data % PAGE_SIZE;
+    uint64_t t = pml4_get_phys(proc->pml4, (void *)((data / PAGE_SIZE) * PAGE_SIZE), true);
     if (t == 0)
     {
         return -1;
@@ -35,21 +35,21 @@ int64_t syscall_read(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, 
 
     void *buf = (void *)(t + offset);
 
-    return stream_read(stream, buf, arg2);
+    return stream_read(stream, buf, size);
 }
 
-int64_t syscall_write(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2, int64_t, int64_t, int64_t, task_state_t *)
+int64_t syscall_write(process_t *proc, int64_t _stream, int64_t data, int64_t size, int64_t, int64_t, int64_t, task_state_t *)
 {
     stream_t *stream = NULL;
-    if (arg0 == 0)
+    if (_stream == 0)
     {
         stream = proc->stdin;
     }
-    else if (arg0 == 1)
+    else if (_stream == 1)
     {
         stream = proc->stdout;
     }
-    else if (arg0 == 2)
+    else if (_stream == 2)
     {
         stream = proc->stderr;
     }
@@ -58,8 +58,8 @@ int64_t syscall_write(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2,
         return -1;
     }
 
-    size_t offset = (uint64_t)arg1 % PAGE_SIZE;
-    uint64_t t = (void *)pml4_get_phys(proc->pml4, (void *)((arg1 / PAGE_SIZE) * PAGE_SIZE), true);
+    size_t offset = (uint64_t)data % PAGE_SIZE;
+    uint64_t t = pml4_get_phys(proc->pml4, (void *)((data / PAGE_SIZE) * PAGE_SIZE), true);
     if (t == 0)
     {
         return -1;
@@ -67,7 +67,7 @@ int64_t syscall_write(process_t *proc, int64_t arg0, int64_t arg1, int64_t arg2,
 
     void *buf = (void *)(t + offset);
 
-    return stream_write(stream, buf, arg2);
+    return stream_write(stream, buf, size);
 }
 
 int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *state)

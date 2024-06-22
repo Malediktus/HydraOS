@@ -146,6 +146,7 @@ setup_page_tables:
     mov [page_table_l3], eax
     
     xor ecx, ecx
+
 .loop:
     mov eax, 0x200000
     imul eax, ecx
