@@ -7,4 +7,4 @@ cd "$DIR" || exit
 
 source build.sh
 
-qemu-system-x86_64 ../hydraos.img -debugcon file:/dev/stdout -no-shutdown -no-reboot
+qemu-system-x86_64 -drive file=../hydraos.img,format=raw -debugcon file:/dev/stdout -no-shutdown -no-reboot
