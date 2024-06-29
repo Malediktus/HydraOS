@@ -1,9 +1,8 @@
 #include <kernel/proc/scheduler.h>
 #include <kernel/proc/task.h>
-#include <kernel/isr.h>
-#include <kernel/port.h>
+#include <kernel/pit.h>
 
-static void timer_irq(interrupt_frame_t *frame)
+static void scheduler_handler(interrupt_frame_t *frame, uint32_t)
 {
     process_t *proc = get_current_process();
     if (!proc)
@@ -35,16 +34,7 @@ static void timer_irq(interrupt_frame_t *frame)
     // TODO: panic
 }
 
-int scheduler_init(void)
+void scheduler_init(void)
 {
-    uint32_t freq = 100;
-    uint32_t divisor = 1193180 / freq;
-    uint8_t low  = (uint8_t)(divisor & 0xFF);
-    uint8_t high = (uint8_t)((divisor >> 8) & 0xFF);
-
-    port_byte_out(0x43, 0x36);
-    port_byte_out(0x40, low);
-    port_byte_out(0x40, high);
-
-    return register_interrupt_handler(0x20, timer_irq);
+    return register_pit_handler(&scheduler_handler);
 }

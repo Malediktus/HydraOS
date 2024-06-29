@@ -18,6 +18,9 @@
         "syscall.h": "c",
         "scheduler.h": "c",
         "h_syscall.h": "c",
-        "stream.h": "c"
+        "stream.h": "c",
+        "stdint.h": "c",
+        "task.h": "c",
+        "port.h": "c"
     }
 }

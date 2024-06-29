@@ -5,7 +5,7 @@
 chardev_t *e9_create(void);
 chardev_t *vga_create(void);
 
-blockdev_t *ide_create(size_t index);
+blockdev_t *ide_create(size_t index, pci_device_t *pci_device);
 
 inputdev_t *ps2_create(void);
 
@@ -127,14 +127,13 @@ static int try_init_block_device(pci_device_t *pci_dev)
 
         for (size_t i = 0; i < 4; i++)
         {
-            blockdevs[blockdevs_size] = ide_create(i);
+            blockdevs[blockdevs_size] = ide_create(i, pci_dev);
             if (!blockdevs[blockdevs_size])
             {
                 continue;
             }
             blockdevs_size++;
         }
-        return 0;
     }
 
     return 0;

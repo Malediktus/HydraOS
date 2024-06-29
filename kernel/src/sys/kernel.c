@@ -12,6 +12,7 @@
 #include <kernel/fs/vfs.h>
 #include <kernel/proc/task.h>
 #include <kernel/proc/scheduler.h>
+#include <kernel/pit.h>
 
 extern partition_table_t mbr_partition_table;
 extern filesystem_t fat32_filesystem;
@@ -210,17 +211,24 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
+    if (interrupts_init() < 0)
+    {
+        return;
+    }
+
+    if (pit_init(100) < 0)
+    {
+        return;
+    }
+
+    enable_interrupts();
+
     if (init_devices() < 0)
     {
         return;
     }
 
     if (kprintf_init(get_chardev(boot_info.tty)) < 0)
-    {
-        return;
-    }
-
-    if (interrupts_init() < 0)
     {
         return;
     }
@@ -237,16 +245,21 @@ void kmain(uint64_t multiboot2_struct_addr)
         while (1);
     }
 
-    size_t i = 0;
-    blockdev_t *bdev = get_blockdev(i);
-    while (bdev)
+    uint64_t i = 0;
+    blockdev_t *bdev = NULL;
+    do
     {
-        kprintf("found disc with %ld sectors, id %ld\n", bdev->num_blocks, i);
+        i++;
+        bdev = get_blockdev(i-1);
+        if (!bdev)
+        {
+            break;
+        }
+        kprintf("found disc %s with %ld sectors, id %ld\n", bdev->model, bdev->num_blocks, i-1);
 
         if (scan_partition(bdev) < 0)
         {
             kprintf("\x1b[31mfailed to scan partition table\n");
-            bdev = get_blockdev(i++);
             continue;
         }
 
@@ -257,6 +270,7 @@ void kmain(uint64_t multiboot2_struct_addr)
             {
                 break;
             }
+            kprintf(" - parititon type: 0x%x\n", part->type);
             if (part->type == 0x83)
             {
                 if (vfs_mount_blockdev(part) < 0)
@@ -266,12 +280,8 @@ void kmain(uint64_t multiboot2_struct_addr)
                 }
                 kprintf("mounted\n");
             }
-
-            kprintf(" - parititon type: 0x%x\n", part->type);
         }
-
-        bdev = get_blockdev(i++);
-    }
+    } while (i > 0);
 
     kprintf("initializing the kernel\n");
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
@@ -289,11 +299,7 @@ void kmain(uint64_t multiboot2_struct_addr)
         while (1);
     }
 
-    if (scheduler_init() < 0)
-    {
-        kprintf("\x1b[31mfailed init scheduler\n");
-        while (1);
-    }
+    scheduler_init();
 
     syscall_init();
     execute_next_process();

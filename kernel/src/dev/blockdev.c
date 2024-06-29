@@ -47,3 +47,13 @@ int blockdev_write_block(uint64_t lba, const uint8_t *data, blockdev_t *bdev)
 
     return bdev->write_block(lba, data, bdev);
 }
+
+int blockdev_eject(blockdev_t *bdev)
+{
+    if (!bdev || !bdev->eject || bdev->type != BLOCKDEV_TYPE_REMOVABLE)
+    {
+        return -1;
+    }
+
+    return bdev->eject(bdev);
+}
