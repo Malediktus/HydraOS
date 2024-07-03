@@ -612,6 +612,8 @@ int ide_write_block(uint64_t lba, const uint8_t *data, blockdev_t *bdev)
         return -1;
     }
 
+    // TODO
+
     return 0;
 }
 
@@ -621,6 +623,8 @@ int ide_eject(blockdev_t *bdev)
     {
         return -1;
     }
+
+    // TODO
 
     return 0;
 }

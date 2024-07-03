@@ -27,7 +27,7 @@ void stream_free(stream_t *stream)
     }
 }
 
-static int _stream_driver_read(stream_t *stream, uint8_t *buf, size_t size)
+static int _stream_driver_read(stream_t *stream, uint32_t *buf, size_t size)
 {
     if (!stream->read_func)
     {
@@ -42,7 +42,7 @@ static int _stream_driver_read(stream_t *stream, uint8_t *buf, size_t size)
     return 0;
 }
 
-int _stream_driver_write(stream_t *stream, const uint8_t *buf, size_t size)
+int _stream_driver_write(stream_t *stream, const uint32_t *buf, size_t size)
 {
     if (!stream->write_func)
     {
@@ -57,7 +57,7 @@ int _stream_driver_write(stream_t *stream, const uint8_t *buf, size_t size)
     return 0;
 }
 
-int stream_read(stream_t *stream, uint8_t *buf, size_t size)
+int stream_read(stream_t *stream, uint32_t *buf, size_t size)
 {
     if (stream->type == STREAM_TYPE_DRIVER)
     {
@@ -66,7 +66,7 @@ int stream_read(stream_t *stream, uint8_t *buf, size_t size)
     return -1;
 }
 
-int stream_write(stream_t *stream, const uint8_t *buf, size_t size)
+int stream_write(stream_t *stream, const uint32_t *buf, size_t size)
 {
     if (stream->type == STREAM_TYPE_DRIVER)
     {

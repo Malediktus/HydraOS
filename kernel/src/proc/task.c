@@ -6,7 +6,7 @@
 extern int __kernel_start;
 extern int __kernel_end;
 
-static uint8_t stdin_read(device_handle_t handle)
+static uint32_t stdin_read(device_handle_t handle)
 {
     inputpacket_t packet;
     if (inputdev_poll(&packet, handle.idev) < 0)
@@ -15,21 +15,31 @@ static uint8_t stdin_read(device_handle_t handle)
         while (1);
     }
 
-    return packet.scancode;
+    if (packet.type == IPACKET_NULL || packet.type == IPACKET_KEYUP)
+    {
+        return 0;
+    }
+
+    uint8_t res[2];
+    res[0] = packet.scancode;
+    res[1] = packet.modifier;
+    uint32_t t = 0;
+    memcpy(&t, res, 2);
+    return t;
 }
 
-static void stdout_write(uint8_t data, device_handle_t handle)
+static void stdout_write(uint32_t data, device_handle_t handle)
 {
-    if (chardev_write(data, CHARDEV_COLOR_WHITE, CHARDEV_COLOR_BLACK, handle.cdev))
+    if (chardev_write((char)data, CHARDEV_COLOR_WHITE, CHARDEV_COLOR_BLACK, handle.cdev))
     {
         // TODO: panic
         while (1);
     }
 }
 
-static void stderr_write(uint8_t data, device_handle_t handle)
+static void stderr_write(uint32_t data, device_handle_t handle)
 {
-    if (chardev_write(data, CHARDEV_COLOR_WHITE, CHARDEV_COLOR_BLACK, handle.cdev))
+    if (chardev_write((char)data, CHARDEV_COLOR_RED, CHARDEV_COLOR_BLACK, handle.cdev))
     {
         // TODO: panic
         while (1);
@@ -153,7 +163,7 @@ process_t *process_create(const char *path)
         return NULL;
     }
 
-    proc->stdin = stream_create_driver(stdin_dev, stdin_read, NULL);
+    proc->stdin = stream_create_driver(stdin_dev, &stdin_read, NULL);
     if (!proc->stdin)
     {
         elf_free(proc->elf);
@@ -186,7 +196,7 @@ process_t *process_create(const char *path)
         return NULL;
     }
 
-    proc->stdout = stream_create_driver(stdout_dev, NULL, stdout_write);
+    proc->stdout = stream_create_driver(stdout_dev, NULL, &stdout_write);
     if (!proc->stdout)
     {
         stream_free(proc->stdin);
