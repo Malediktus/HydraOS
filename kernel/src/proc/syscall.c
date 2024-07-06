@@ -86,8 +86,29 @@ int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
 
     memcpy(&fork->task->state, state, sizeof(task_state_t));
 
+    for (int i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
+    {
+        if (proc->allocations[i] == 0)
+        {
+            continue;
+        }
+
+        fork->allocations[i] = pmm_alloc();
+        if (!fork->allocations[i])
+        {
+            // TODO: panic
+            while (1);
+        }
+        memcpy(fork->allocations[i], proc->allocations[i], PAGE_SIZE);
+
+        if (pml4_map(fork->pml4, (void *)(PROCESS_HEAP_VADDR_BASE + i * PAGE_SIZE), fork->allocations[i], PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
+        {
+            // TODO: panic
+            while (1);
+        }
+    }
+
     fork->task->state.rax = 0; // return value
-    //fork->task->state.rip++;
 
     if (process_register(fork) < 0)
     {
@@ -96,6 +117,11 @@ int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
     }
 
     return fork->pid;
+}
+
+int64_t syscall_mmap(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
+{
+    return (int64_t)process_allocate_page(proc);
 }
 
 extern page_table_t *kernel_pml4;
@@ -126,6 +152,9 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
         break;
     case 2:
         res = syscall_fork(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 3:
+        res = syscall_mmap(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     default:
         break;

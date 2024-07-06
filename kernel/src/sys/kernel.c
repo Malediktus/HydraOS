@@ -201,7 +201,7 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    if (kmm_init(kernel_pml4, (get_max_addr() + PAGE_SIZE - 1) / PAGE_SIZE, 8 * PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
+    if (kmm_init(kernel_pml4, 0x1200000, 16 * PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
     {
         return;
     }

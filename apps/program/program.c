@@ -16,6 +16,11 @@ uint64_t fork(void)
     return syscall(2, 0, 0, 0, 0, 0, 0);
 }
 
+void *allocate_page(void)
+{
+    return (void *)syscall(3, 0, 0, 0, 0, 0, 0);
+}
+
 #define MODIFIER_SHIFT 1 << 0
 #define MODIFIER_CTRL 1 << 1
 #define MODIFIER_ALT 1 << 2
@@ -117,6 +122,16 @@ void memcpy(void *dest, const void *src, size_t len)
     }
 }
 
+void *memset(void *dest, register int val, register size_t len)
+{
+    register unsigned char *ptr = (unsigned char *)dest;
+    while (len-- > 0)
+    {
+        *ptr++ = val;
+    }
+    return dest;
+}
+
 int main(void)
 {
     const uint32_t *str = L"Hello User World!\n";
@@ -126,8 +141,7 @@ int main(void)
     if (pid == 0)
     {
         write(1, L"Forked process\n", 15);
-        while (1)
-            ;
+        while (1);
     }
 
     uint32_t c = 0;
@@ -143,7 +157,6 @@ int main(void)
         }
     }
 
-    while (1)
-        ;
+    while (1);
     return 0;
 }

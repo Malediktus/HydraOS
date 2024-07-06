@@ -9,6 +9,9 @@ You will need the following requirements:
 - bash
 - python3
 - make
+- gcc
+- g++
+- fdisk
 - x86_64-elf-binutils
 - x86_64-elf-gcc
 - nasm

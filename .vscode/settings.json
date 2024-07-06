@@ -21,6 +21,7 @@
         "stream.h": "c",
         "stdint.h": "c",
         "task.h": "c",
-        "port.h": "c"
+        "port.h": "c",
+        "assert.h": "c"
     }
 }

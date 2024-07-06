@@ -2,6 +2,7 @@
 #include <kernel/kmm.h>
 #include <kernel/string.h>
 #include <kernel/kprintf.h>
+#include <kernel/pmm.h>
 
 extern int __kernel_start;
 extern int __kernel_end;
@@ -143,6 +144,8 @@ process_t *process_create(const char *path)
         return NULL;
     }
 
+    memset(proc->allocations, 0, PROCESS_MAX_HEAP_PAGES * sizeof(void *));
+
     proc->task->state.rsp = PROCESS_STACK_VADDR_BASE + PROCESS_STACK_SIZE;
     proc->next = NULL;
 
@@ -273,6 +276,11 @@ int process_free(process_t *proc)
     }
     kfree(proc->task->stack_pages);
     kfree(proc->task);
+
+    for (int i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
+    {
+        pmm_free(proc->allocations[i]);
+    }
     kfree(proc);
 
     return 0;
@@ -364,4 +372,27 @@ int execute_next_process(void)
 process_t *get_current_process(void)
 {
     return current_proc;
+}
+
+void *process_allocate_page(process_t *proc)
+{
+    for (int i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
+    {
+        if (proc->allocations[i] != 0)
+        {
+            proc->allocations[i] = pmm_alloc();
+            if (!proc->allocations[i])
+            {
+                return NULL;
+            }
+            if (pml4_map(proc->pml4, (void *)(PROCESS_HEAP_VADDR_BASE + i * PAGE_SIZE), proc->allocations[i], PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
+            {
+                return NULL;
+            }
+
+            return (void *)(PROCESS_HEAP_VADDR_BASE + i * PAGE_SIZE);
+        }
+    }
+
+    return NULL;
 }

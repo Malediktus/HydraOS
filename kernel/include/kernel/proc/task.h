@@ -9,8 +9,18 @@
 #include <kernel/proc/elf.h>
 #include <kernel/proc/stream.h>
 
+/*
+ kernel:  0x100000
+ heap:    0x200000
+ process: 0x400000
+ stack:   0x800000
+*/
+
 #define PROCESS_STACK_VADDR_BASE 0x800000
 #define PROCESS_STACK_SIZE 4096 * 3
+
+#define PROCESS_HEAP_VADDR_BASE 0x200000
+#define PROCESS_MAX_HEAP_PAGES 512
 
 typedef struct
 {
@@ -39,6 +49,8 @@ typedef struct _process
     void **data_pages; // physical addresses
     size_t num_data_pages;
 
+    void *allocations[PROCESS_MAX_HEAP_PAGES];
+
     uint64_t pid;
 
     stream_t *stdin;
@@ -57,5 +69,6 @@ int process_register(process_t *proc);
 int process_unregister(process_t *proc);
 int execute_next_process(void);
 process_t *get_current_process(void);
+void *process_allocate_page(process_t *proc);
 
 #endif
