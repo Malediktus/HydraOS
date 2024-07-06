@@ -101,25 +101,29 @@ uint64_t pml4_get_phys(page_table_t *pml4, void *virt, bool user)
     uint16_t pt_index = (virt_addr >> 12) & 0x1FF;
 
     uint64_t entry = pml4->entries[pml4_index];
-    if ((entry & PAGE_PRESENT) != PAGE_PRESENT) {
+    if ((entry & PAGE_PRESENT) != PAGE_PRESENT)
+    {
         return 0;
     }
 
     page_table_t *pdpt = (page_table_t *)(entry & ~0xFFF);
     entry = pdpt->entries[pdpt_index];
-    if ((entry & PAGE_PRESENT) != PAGE_PRESENT) {
+    if ((entry & PAGE_PRESENT) != PAGE_PRESENT)
+    {
         return 0;
     }
 
     page_table_t *pd = (page_table_t *)(entry & ~0xFFF);
     entry = pd->entries[pd_index];
-    if ((entry & PAGE_PRESENT) != PAGE_PRESENT) {
+    if ((entry & PAGE_PRESENT) != PAGE_PRESENT)
+    {
         return 0;
     }
 
     page_table_t *pt = (page_table_t *)(entry & ~0xFFF);
     entry = pt->entries[pt_index];
-    if ((entry & PAGE_PRESENT) != PAGE_PRESENT) {
+    if ((entry & PAGE_PRESENT) != PAGE_PRESENT)
+    {
         return 0;
     }
     if ((entry & PAGE_USER) != PAGE_USER && user)
@@ -138,4 +142,18 @@ int pml4_switch(page_table_t *pml4)
     __asm__ volatile("mov %0, %%cr3" : : "r"(pml4));
 
     return 0;
+}
+
+void *page_align_address_lower(void *addr)
+{
+    uintptr_t _addr = (uintptr_t)addr;
+    _addr -= _addr % PAGE_SIZE;
+    return (void *)_addr;
+}
+
+void *page_align_address_higer(void *addr)
+{
+    uintptr_t _addr = (uintptr_t)addr;
+    _addr += PAGE_SIZE - (_addr % PAGE_SIZE);
+    return (void *)_addr;
 }

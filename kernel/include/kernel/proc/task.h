@@ -17,6 +17,8 @@
  stack:   0x800000
 */
 
+#define PROCESS_VADDR 0x400000
+
 #define PROCESS_STACK_VADDR_BASE 0x800000
 #define PROCESS_STACK_SIZE 4096 * 3
 
@@ -64,7 +66,7 @@ typedef struct _process
 void syscall_init(void);
 
 process_t *process_create(const char *path);
-int process_free(process_t *proc);
+void process_free(process_t *proc);
 
 int process_register(process_t *proc);
 int process_unregister(process_t *proc);

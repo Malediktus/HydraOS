@@ -56,30 +56,31 @@ process_t *process_create(const char *path)
         return NULL;
     }
 
+    memset(proc, 0, sizeof(process_t));
+
     proc->elf = elf_load(path);
     if (!proc->elf)
     {
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
     proc->task = kmalloc(sizeof(task_t));
     if (!proc->task)
     {
-        elf_free(proc->elf);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
     memset(&proc->task->state, 0, sizeof(task_state_t));
+    proc->task->state.rip = elf_entry(proc->elf);
 
     strncpy(proc->path, path, MAX_PATH);
     proc->pml4 = pmm_alloc();
+    memset(proc->pml4, 0, PAGE_SIZE);
     if (!proc->pml4)
     {
-        elf_free(proc->elf);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
@@ -89,10 +90,7 @@ process_t *process_create(const char *path)
     {
         if (pml4_map(proc->pml4, (void *)i, (void *)i, PAGE_PRESENT | PAGE_WRITABLE) < 0)
         {
-            elf_free(proc->elf);
-            pmm_free((uint64_t *)proc->pml4);
-            kfree(proc->task);
-            kfree(proc);
+            process_free(proc);
             return NULL;
         }
     }
@@ -101,10 +99,7 @@ process_t *process_create(const char *path)
     proc->task->stack_pages = kmalloc(proc->task->num_stack_pages);
     if (!proc->task->stack_pages)
     {
-        elf_free(proc->elf);
-        pmm_free((uint64_t *)proc->pml4);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
@@ -113,34 +108,20 @@ process_t *process_create(const char *path)
         proc->task->stack_pages[i] = pmm_alloc();
         if (!proc->task->stack_pages[i])
         {
-            elf_free(proc->elf);
-            pmm_free((uint64_t *)proc->pml4);
-            kfree(proc->task);
-            kfree(proc);
+            process_free(proc);
             return NULL;
         }
 
         if (pml4_map(proc->pml4, (void *)(PROCESS_STACK_VADDR_BASE + (PROCESS_STACK_SIZE - i * PAGE_SIZE)), proc->task->stack_pages[i], PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
         {
-            elf_free(proc->elf);
-            pmm_free((uint64_t *)proc->pml4);
-            kfree(proc->task);
-            kfree(proc);
+            process_free(proc);
             return NULL;
         }
     }
 
-    if (elf_setup_exec(proc->elf, proc) < 0)
+    if (elf_load_and_map(proc, proc->elf) < 0)
     {
-        elf_free(proc->elf);
-        pmm_free((uint64_t *)proc->pml4);
-        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
-        {
-            pmm_free(proc->task->stack_pages[i]);
-        }
-        kfree(proc->task->stack_pages);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
@@ -154,30 +135,14 @@ process_t *process_create(const char *path)
     stdin_dev.idev = get_inputdev(0);
     if (!stdin_dev.idev)
     {
-        elf_free(proc->elf);
-        pmm_free((uint64_t *)proc->pml4);
-        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
-        {
-            pmm_free(proc->task->stack_pages[i]);
-        }
-        kfree(proc->task->stack_pages);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
     proc->stdin = stream_create_driver(stdin_dev, &stdin_read, NULL);
     if (!proc->stdin)
     {
-        elf_free(proc->elf);
-        pmm_free((uint64_t *)proc->pml4);
-        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
-        {
-            pmm_free(proc->task->stack_pages[i]);
-        }
-        kfree(proc->task->stack_pages);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
@@ -186,32 +151,14 @@ process_t *process_create(const char *path)
     stdout_dev.cdev = kprintf_get_cdev();
     if (!stdout_dev.cdev)
     {
-        stream_free(proc->stdin);
-        elf_free(proc->elf);
-        pmm_free((uint64_t *)proc->pml4);
-        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
-        {
-            pmm_free(proc->task->stack_pages[i]);
-        }
-        kfree(proc->task->stack_pages);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
     proc->stdout = stream_create_driver(stdout_dev, NULL, &stdout_write);
     if (!proc->stdout)
     {
-        stream_free(proc->stdin);
-        elf_free(proc->elf);
-        pmm_free((uint64_t *)proc->pml4);
-        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
-        {
-            pmm_free(proc->task->stack_pages[i]);
-        }
-        kfree(proc->task->stack_pages);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
@@ -220,34 +167,14 @@ process_t *process_create(const char *path)
     stderr_dev.cdev = kprintf_get_cdev();
     if (!stderr_dev.cdev)
     {
-        stream_free(proc->stdin);
-        stream_free(proc->stdout);
-        elf_free(proc->elf);
-        pmm_free((uint64_t *)proc->pml4);
-        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
-        {
-            pmm_free(proc->task->stack_pages[i]);
-        }
-        kfree(proc->task->stack_pages);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
     proc->stderr = stream_create_driver(stderr_dev, NULL, stderr_write);
     if (!proc->stderr)
     {
-        stream_free(proc->stdin);
-        stream_free(proc->stdout);
-        elf_free(proc->elf);
-        pmm_free((uint64_t *)proc->pml4);
-        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
-        {
-            pmm_free(proc->task->stack_pages[i]);
-        }
-        kfree(proc->task->stack_pages);
-        kfree(proc->task);
-        kfree(proc);
+        process_free(proc);
         return NULL;
     }
 
@@ -256,34 +183,64 @@ process_t *process_create(const char *path)
     return proc;
 }
 
-int process_free(process_t *proc)
+void process_free(process_t *proc)
 {
-    stream_free(proc->stdin);
-    stream_free(proc->stdout);
-    stream_free(proc->stderr);
-
-    for (size_t i = 0; i < proc->num_data_pages; i++)
+    if (!proc)
     {
-        pmm_free(proc->data_pages[i]);
+        return;
     }
 
-    kfree(proc->data_pages);
-    elf_free(proc->elf);
-    pmm_free((uint64_t *)proc->pml4);
-    for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+    if (proc->stdin)
     {
-        pmm_free(proc->task->stack_pages[i]);
+        stream_free(proc->stdin);
     }
-    kfree(proc->task->stack_pages);
-    kfree(proc->task);
+    if (proc->stdout)
+    {
+        stream_free(proc->stdout);
+    }
+    if (proc->stderr)
+    {
+        stream_free(proc->stderr);
+    }
+
+    if (proc->elf)
+    {
+        elf_free(proc->elf);
+    }
+    if (proc->pml4)
+    {
+        pmm_free((uint64_t *)proc->pml4);
+    }
+    if (proc->data_pages)
+    {
+        for (size_t i = 0; i < proc->num_data_pages; i++)
+        {
+            pmm_free(proc->data_pages[i]);
+        }
+        kfree(proc->data_pages);
+    }
+    if (proc->task && proc->task->stack_pages)
+    {
+        for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+        {
+            pmm_free(proc->task->stack_pages[i]);
+        }
+        kfree(proc->task->stack_pages);
+    }
+    if (proc->task)
+    {
+        kfree(proc->task);
+    }
 
     for (int i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
     {
-        pmm_free(proc->allocations[i]);
+        if (proc->allocations[i])
+        {
+            pmm_free(proc->allocations[i]);
+        }
     }
-    kfree(proc);
 
-    return 0;
+    kfree(proc);
 }
 
 process_t *proc_head = NULL;

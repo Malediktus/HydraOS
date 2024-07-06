@@ -22,6 +22,7 @@
         "stdint.h": "c",
         "task.h": "c",
         "port.h": "c",
-        "assert.h": "c"
+        "assert.h": "c",
+        "elf.h": "c"
     }
 }

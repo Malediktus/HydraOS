@@ -132,9 +132,10 @@ void *memset(void *dest, register int val, register size_t len)
     return dest;
 }
 
+static const uint32_t *str = L"Hello User World!\n";
+
 int main(void)
 {
-    const uint32_t *str = L"Hello User World!\n";
     write(1, str, 18);
 
     uint64_t pid = fork();
