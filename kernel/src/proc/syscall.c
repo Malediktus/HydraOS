@@ -23,14 +23,14 @@ int64_t syscall_read(process_t *proc, int64_t _stream, int64_t data, int64_t siz
     }
     else
     {
-        return -1;
+        return -EINVARG;
     }
 
     size_t offset = (uint64_t)data % PAGE_SIZE;
     uint64_t t = pml4_get_phys(proc->pml4, (void *)((data / PAGE_SIZE) * PAGE_SIZE), true);
     if (t == 0)
     {
-        return -1;
+        return -EUNKNOWN;
     }
 
     void *buf = (void *)(t + offset);
@@ -55,14 +55,14 @@ int64_t syscall_write(process_t *proc, int64_t _stream, int64_t data, int64_t si
     }
     else
     {
-        return -1;
+        return -EINVARG;
     }
 
     size_t offset = (uint64_t)data % PAGE_SIZE;
     uint64_t t = pml4_get_phys(proc->pml4, (void *)((data / PAGE_SIZE) * PAGE_SIZE), true);
     if (t == 0)
     {
-        return -1;
+        return -EUNKNOWN;
     }
 
     void *buf = (void *)(t + offset);
@@ -86,7 +86,7 @@ int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
 
     memcpy(&fork->task->state, state, sizeof(task_state_t));
 
-    for (int i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
+    for (uint64_t i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
     {
         if (proc->allocations[i] == 0)
         {

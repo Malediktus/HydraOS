@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <kernel/status.h>
 #include <kernel/dev/devm.h>
 
 typedef enum

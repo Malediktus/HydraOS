@@ -2,6 +2,7 @@
 #define _KERNEL_INPUTDEV_H
 
 #include <stdint.h>
+#include <kernel/status.h>
 
 #define IPACKET_NULL 0
 #define IPACKET_KEYDOWN 1

@@ -13,7 +13,7 @@ static int add_virtual_blockdev(virtual_blockdev_t *vbdev)
 {
     if (!vbdev)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (!vbdevs_head)
@@ -30,7 +30,7 @@ static int add_virtual_blockdev(virtual_blockdev_t *vbdev)
 
     if (!vbdev_entry)
     {
-        return -1;
+        return -ECORRUPT;
     }
 
     vbdev_entry->next = vbdev;
@@ -58,7 +58,7 @@ int scan_partition(blockdev_t *bdev)
         virtual_blockdev_t *vbdev = kmalloc(sizeof(virtual_blockdev_t));
         if (!vbdev)
         {
-            return -1;
+            return -ENOMEM;
         }
 
         vbdev->pt = NULL;
@@ -67,9 +67,10 @@ int scan_partition(blockdev_t *bdev)
         vbdev->type = 0;
         vbdev->index = 0;
 
-        if (add_virtual_blockdev(vbdev) < 0)
+        int status = add_virtual_blockdev(vbdev);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
 
         return 0;
@@ -78,36 +79,38 @@ int scan_partition(blockdev_t *bdev)
     void *pt_data = pt->pt_init(bdev);
     if (!pt_data)
     {
-        return -1;
+        return -EUNKNOWN;
     }
 
     virtual_blockdev_t *vbdev = kmalloc(sizeof(virtual_blockdev_t));
     if (!vbdev)
     {
-        return -1;
+        return -ENOMEM;
     }
 
     vbdev->pt = pt;
     vbdev->bdev = bdev;
     for (uint8_t i = 0; pt->pt_get(i, pt_data, vbdev) >= 0 && i < UINT8_MAX; i++)
     {
-        if (add_virtual_blockdev(vbdev) < 0)
+        int status = add_virtual_blockdev(vbdev);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
 
         vbdev = kmalloc(sizeof(virtual_blockdev_t));
         if (!vbdev)
         {
-            return -1;
+            return -ENOMEM;
         }
     }
 
     kfree(vbdev);
 
-    if (pt->pt_free(bdev, pt_data) < 0)
+    int status = pt->pt_free(bdev, pt_data);
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
     return 0;
@@ -117,7 +120,7 @@ int free_virtual_blockdevs(blockdev_t *bdev)
 {
     if (!bdev)
     {
-        return -1;
+        return -EINVARG;
     }
 
     virtual_blockdev_t *vbdev = NULL;
@@ -131,9 +134,10 @@ int free_virtual_blockdevs(blockdev_t *bdev)
         vbdev->prev->next = vbdev->next;
         vbdev->next->prev = vbdev->prev;
 
-        if (blockdev_free_ref(vbdev->bdev) < 0)
+        int status = blockdev_free_ref(vbdev->bdev);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
 
         kfree(vbdev);
@@ -160,7 +164,7 @@ int register_partition_table(partition_table_t *pt)
 {
     if (!pt)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (!partition_tables)
@@ -168,7 +172,7 @@ int register_partition_table(partition_table_t *pt)
         partition_tables = kmalloc(sizeof(partition_table_t *) * PARTITION_TABLES_CAPACITY_INCREASE);
         if (!partition_tables)
         {
-            return -1;
+            return -ENOMEM;
         }
 
         partition_tables_capacity = PARTITION_TABLES_CAPACITY_INCREASE;

@@ -579,17 +579,17 @@ int ide_read_block(uint64_t lba, uint8_t *data, blockdev_t *bdev)
 {
     if (!bdev || !bdev->available)
     {
-        return -1;
+        return -EINVARG;
     }
 
     ide_device_t *dev = &ide_devices[bdev->_data];
     if (bdev->_data > 3 || dev->reserved == 0)
     {
-        return -2;
+        return -EINVARG;
     }
     if (((lba + 1) > dev->size) && (dev->type == IDE_ATA))
     {
-        return -3;
+        return -ERECOV;
     }
 
     uint8_t err = 0;
@@ -602,14 +602,14 @@ int ide_read_block(uint64_t lba, uint8_t *data, blockdev_t *bdev)
         err = ide_atapi_read(bdev->_data, lba, 1, data);
     }
 
-    return -err;
+    return -err; // TODO: use own error codes
 }
 
 int ide_write_block(uint64_t lba, const uint8_t *data, blockdev_t *bdev)
 {
     if (!bdev || !bdev->available)
     {
-        return -1;
+        return -EINVARG;
     }
 
     // TODO
@@ -619,9 +619,13 @@ int ide_write_block(uint64_t lba, const uint8_t *data, blockdev_t *bdev)
 
 int ide_eject(blockdev_t *bdev)
 {
-    if (!bdev || ide_devices[bdev->_data].type != IDE_ATAPI)
+    if (!bdev)
     {
-        return -1;
+        return -EINVARG;
+    }
+    if (ide_devices[bdev->_data].type != IDE_ATAPI)
+    {
+        return -ERECOV;
     }
 
     // TODO
@@ -633,7 +637,7 @@ int ide_free(blockdev_t *bdev)
 {
     if (!bdev)
     {
-        return -1;
+        return -EINVARG;
     }
 
     kfree(bdev);

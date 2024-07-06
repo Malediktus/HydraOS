@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <kernel/status.h>
 
 #define BLOCKDEV_MODEL_MAX_LEN 41
 #define BLOCKDEV_TYPE_HARD_DRIVE 0

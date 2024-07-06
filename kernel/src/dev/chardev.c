@@ -16,7 +16,7 @@ int chardev_free_ref(chardev_t *cdev)
 {
     if (!cdev || !cdev->free)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (cdev->references <= 1)
@@ -32,7 +32,7 @@ int chardev_write(char c, chardev_color_t fg, chardev_color_t bg, chardev_t *cde
 {
     if (!cdev || !cdev->write)
     {
-        return -1;
+        return -EINVARG;
     }
 
     return cdev->write(c, fg, bg, cdev);

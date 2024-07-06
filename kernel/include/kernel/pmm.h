@@ -2,6 +2,7 @@
 #define _KERNEL_PMM_H
 
 #include <stdint.h>
+#include <kernel/status.h>
 
 #define PAGE_SIZE 4096
 

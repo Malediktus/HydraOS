@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <kernel/status.h>
 #include <kernel/vmm.h>
 #include <kernel/fs/vfs.h>
 #include <kernel/proc/elf.h>

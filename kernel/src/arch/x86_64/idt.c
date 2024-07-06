@@ -44,7 +44,7 @@ int set_idt_gate(uint32_t ino, void (*handler)(void))
 {
     if (ino > 255)
     {
-        return -1;
+        return -EINVARG;
     }
 
     uint64_t offset = (uint64_t)handler;

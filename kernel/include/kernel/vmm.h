@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <kernel/status.h>
 #include <kernel/pmm.h>
 
 #define PAGE_PRESENT 0x1                 // Present

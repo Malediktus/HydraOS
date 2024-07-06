@@ -301,7 +301,7 @@ int process_register(process_t *proc)
     for (tail = proc_head; tail->next != NULL; tail = tail->next);
     if (!tail)
     {
-        return -1;
+        return -ECORRUPT;
     }
 
     tail->next = proc;
@@ -313,8 +313,7 @@ int process_unregister(process_t *proc)
 {
     if (!proc_head)
     {
-        proc_head = proc;
-        return -1;
+        return -ECORRUPT;
     }
 
     if (current_proc == proc)
@@ -331,7 +330,7 @@ int process_unregister(process_t *proc)
         }
     }
 
-    return -1; // not found
+    return -EINVARG; // not found
 }
 
 void task_execute(uint64_t rip, uint64_t rsp, uint64_t eflags, task_state_t *state);
@@ -340,7 +339,7 @@ int execute_next_process(void)
 {
     if (!proc_head)
     {
-        return -1;
+        return -ECORRUPT;
     }
 
     if (!current_proc)
@@ -358,9 +357,10 @@ int execute_next_process(void)
 
     task_state_t state = current_proc->task->state; // needs to be copied because proc is allocated and not mapped in processes pml4
 
-    if (pml4_switch(current_proc->pml4) < 0)
+    int status = pml4_switch(current_proc->pml4);
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
     // TODO: execute global constructors
@@ -376,7 +376,7 @@ process_t *get_current_process(void)
 
 void *process_allocate_page(process_t *proc)
 {
-    for (int i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
+    for (uint64_t i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
     {
         if (proc->allocations[i] != 0)
         {

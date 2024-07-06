@@ -16,7 +16,7 @@ int blockdev_free_ref(blockdev_t *bdev)
 {
     if (!bdev || !bdev->free)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (bdev->references <= 1)
@@ -32,7 +32,7 @@ int blockdev_read_block(uint64_t lba, uint8_t *data, blockdev_t *bdev)
 {
     if (!bdev || !bdev->read_block)
     {
-        return -1;
+        return -EINVARG;
     }
 
     return bdev->read_block(lba, data, bdev);
@@ -42,7 +42,7 @@ int blockdev_write_block(uint64_t lba, const uint8_t *data, blockdev_t *bdev)
 {
     if (!bdev || !bdev->write_block)
     {
-        return -1;
+        return -EINVARG;
     }
 
     return bdev->write_block(lba, data, bdev);
@@ -52,7 +52,7 @@ int blockdev_eject(blockdev_t *bdev)
 {
     if (!bdev || !bdev->eject || bdev->type != BLOCKDEV_TYPE_REMOVABLE)
     {
-        return -1;
+        return -EINVARG;
     }
 
     return bdev->eject(bdev);

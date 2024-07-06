@@ -31,7 +31,7 @@ static int _stream_driver_read(stream_t *stream, uint32_t *buf, size_t size)
 {
     if (!stream->read_func)
     {
-        return -1;
+        return -EINVARG;
     }
 
     for (size_t i = 0; i < size; i++)
@@ -46,7 +46,7 @@ int _stream_driver_write(stream_t *stream, const uint32_t *buf, size_t size)
 {
     if (!stream->write_func)
     {
-        return -1;
+        return -EINVARG;
     }
 
     for (size_t i = 0; i < size; i++)
@@ -63,7 +63,7 @@ int stream_read(stream_t *stream, uint32_t *buf, size_t size)
     {
         return _stream_driver_read(stream, buf, size);
     }
-    return -1;
+    return -EINVARG;
 }
 
 int stream_write(stream_t *stream, const uint32_t *buf, size_t size)
@@ -72,5 +72,5 @@ int stream_write(stream_t *stream, const uint32_t *buf, size_t size)
     {
         return _stream_driver_write(stream, buf, size);
     }
-    return -1;
+    return -EINVARG;
 }

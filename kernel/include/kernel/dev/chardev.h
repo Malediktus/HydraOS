@@ -2,6 +2,7 @@
 #define _KERNEL_CHARDEV_H
 
 #include <stdint.h>
+#include <kernel/status.h>
 
 typedef enum
 {

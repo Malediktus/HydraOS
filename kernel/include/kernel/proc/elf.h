@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <kernel/status.h>
 #include <kernel/fs/vfs.h>
 
 #define ELF64_ST_BIND(i) ((i) >> 4)

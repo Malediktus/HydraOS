@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#include <kernel/status.h>
 #include <kernel/dev/chardev.h>
 
 int kprintf_init(chardev_t *cdev);

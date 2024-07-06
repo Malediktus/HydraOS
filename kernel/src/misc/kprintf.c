@@ -982,7 +982,7 @@ int kprintf_init(chardev_t *cdev)
 {
     if (!cdev)
     {
-        return -1;
+        return -EINVARG;
     }
 
     kprintf_cdev = cdev;

@@ -7,37 +7,37 @@ static int verify_elf_header(elf_file_t *elf_file)
 {
     if (elf_file->header.e_type != ET_EXEC)
     {
-        return -1;
+        return -ERECOV;
     }
 
     if (elf_file->header.e_machine != EM_X86_64)
     {
-        return -2;
+        return -ERECOV;
     }
 
     if (elf_file->header.e_version != EV_CURRENT)
     {
-        return -3;
+        return -ERECOV;
     }
 
     if (elf_file->header.e_ident[0] != 0x7f || elf_file->header.e_ident[1] != 'E' || elf_file->header.e_ident[2] != 'L' || elf_file->header.e_ident[3] != 'F')
     {
-        return -4;
+        return -ERECOV;
     }
 
     if (elf_file->header.e_ident[4] != ELFCLASS64)
     {
-        return -5;
+        return -ERECOV;
     }
 
     if (elf_file->header.e_ident[5] != ELFDATA2LSB)
     {
-        return -6;
+        return -ERECOV;
     }
 
     if (elf_file->header.e_ident[6] != EV_CURRENT)
     {
-        return -7;
+        return -ERECOV;
     }
 
     return 0;
@@ -98,12 +98,13 @@ int elf_free(elf_file_t *elf_file)
 {
     if (!elf_file || !elf_file->node || !elf_file->program_header_table)
     {
-        return -1;
+        return -EINVARG;
     }
 
-    if (vfs_close(elf_file->node) < 0)
+    int status = vfs_close(elf_file->node);
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
     kfree(elf_file->program_header_table);
@@ -116,7 +117,7 @@ static int load_segment(elf_file_t *elf_file, Elf64_Phdr *ph, process_t *proc, u
 {
     if (!ph)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (ph->p_type != PT_LOAD)
@@ -124,9 +125,10 @@ static int load_segment(elf_file_t *elf_file, Elf64_Phdr *ph, process_t *proc, u
         return 0;
     }
 
-    if (vfs_seek(elf_file->node, ph->p_offset, SEEK_TYPE_SET) < 0)
+    int status = vfs_seek(elf_file->node, ph->p_offset, SEEK_TYPE_SET);
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
     for (size_t i = 0; i < (ph->p_memsz + (PAGE_SIZE - 1)) / PAGE_SIZE; i++)
@@ -134,7 +136,7 @@ static int load_segment(elf_file_t *elf_file, Elf64_Phdr *ph, process_t *proc, u
         proc->data_pages[*data_pages_index] = pmm_alloc();
         if (!proc->data_pages[*data_pages_index])
         {
-            return -1;
+            return -ENOMEM;
         }
 
         if (ph->p_memsz > ph->p_filesz)
@@ -151,14 +153,16 @@ static int load_segment(elf_file_t *elf_file, Elf64_Phdr *ph, process_t *proc, u
             remainder = PAGE_SIZE;
         }
 
-        if (vfs_read(elf_file->node, remainder, proc->data_pages[*data_pages_index]) < 0)
+        status = vfs_read(elf_file->node, remainder, proc->data_pages[*data_pages_index]);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
 
-        if (pml4_map(proc->pml4, (void *)(ph->p_vaddr + i * PAGE_SIZE), proc->data_pages[*data_pages_index], PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0) // TODO set permissions with flags
+        status = pml4_map(proc->pml4, (void *)(ph->p_vaddr + i * PAGE_SIZE), proc->data_pages[*data_pages_index], PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER);
+        if (status < 0) // TODO set permissions with flags
         {
-            return -1;
+            return status;
         }
 
         *data_pages_index += 1;
@@ -171,7 +175,7 @@ int elf_setup_exec(elf_file_t *elf_file, process_t *proc)
 {
     if (!elf_file || !elf_file->node || !elf_file->program_header_table)
     {
-        return -1;
+        return -EINVARG;
     }
 
     uint64_t num_pages = 0;
@@ -184,15 +188,16 @@ int elf_setup_exec(elf_file_t *elf_file, process_t *proc)
     proc->data_pages = kmalloc(num_pages);
     if (!proc->data_pages)
     {
-        return -1;
+        return -ENOMEM;
     }
 
     uint64_t data_pages_index = 0;
     for (Elf64_Half i = 0; i < elf_file->header.e_phnum; i++)
     {
-        if (load_segment(elf_file, &elf_file->program_header_table[i], proc, &data_pages_index) < 0)
+        int status = load_segment(elf_file, &elf_file->program_header_table[i], proc, &data_pages_index);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
     }
 

@@ -12,7 +12,7 @@ int register_filesystem(filesystem_t *fs)
 {
     if (!fs)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (!filesystems)
@@ -20,7 +20,7 @@ int register_filesystem(filesystem_t *fs)
         filesystems = kmalloc(sizeof(filesystem_t *) * FILESYSTEMS_CAPACITY_INCREASE);
         if (!filesystems)
         {
-            return -1;
+            return -ENOMEM;
         }
 
         filesystems_capacity = FILESYSTEMS_CAPACITY_INCREASE;
@@ -70,14 +70,14 @@ static int allocate_mount_id(void)
         }
     }
 
-    return -1;
+    return -ERECOV;
 }
 
 int vfs_mount_blockdev(virtual_blockdev_t *vbdev)
 {
     if (!vbdev)
     {
-        return -1;
+        return -ERECOV;
     }
 
     filesystem_t *fs = NULL;
@@ -92,7 +92,7 @@ int vfs_mount_blockdev(virtual_blockdev_t *vbdev)
 
     if (!fs)
     {
-        return -1;
+        return -ERECOV;
     }
 
     if (!mounts_head)
@@ -100,7 +100,7 @@ int vfs_mount_blockdev(virtual_blockdev_t *vbdev)
         mounts_head = kmalloc(sizeof(mount_t));
         if (!mounts_head)
         {
-            return -1;
+            return -ENOMEM;
         }
 
         mounts_head->vbdev = vbdev;
@@ -118,22 +118,22 @@ int vfs_mount_blockdev(virtual_blockdev_t *vbdev)
 
     if (!mnt)
     {
-        return -1;
+        return -ERECOV;
     }
 
     mount_t *new_mount = kmalloc(sizeof(mount_t));
     if (!new_mount)
     {
-        return -1;
+        return -ENOMEM;
     }
 
     new_mount->vbdev = vbdev;
     new_mount->fs = fs;
     new_mount->fs_data = fs->fs_init(vbdev);
-    new_mount->id = allocate_mount_id();
-    if (new_mount->id < 0)
+    int status = new_mount->id = allocate_mount_id();
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
     new_mount->next = NULL;
@@ -147,7 +147,7 @@ int vfs_unmount_blockdev(int id)
 {
     if (!mounts_head)
     {
-        return -1;
+        return -ECORRUPT;
     }
 
     mount_t *mnt = NULL;
@@ -167,14 +167,14 @@ int vfs_unmount_blockdev(int id)
         return 0;
     }
 
-    return -1;
+    return -EUNKNOWN;
 }
 
 int extract_disk_id(const char *str)
 {
     if (!str)
     {
-        return -1;
+        return -EINVARG;
     }
 
     char *end;
@@ -182,12 +182,12 @@ int extract_disk_id(const char *str)
 
     if (end == str || *end != ':')
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (id < 0 || id > INT32_MAX)
     {
-        return -1;
+        return -EINVARG;
     }
 
     return (int)id;
@@ -256,7 +256,7 @@ int vfs_close(file_node_t *node)
 {
     if (!node)
     {
-        return -1;
+        return -EINVARG;
     }
 
     mount_t *mnt = NULL;
@@ -270,14 +270,14 @@ int vfs_close(file_node_t *node)
         return mnt->fs->fs_close(node, mnt->vbdev, mnt->fs_data);
     }
 
-    return -1;
+    return -EINVARG;
 }
 
 int vfs_read(file_node_t *node, size_t size, uint8_t *buf)
 {
     if (!node)
     {
-        return -1;
+        return -EINVARG;
     }
 
     mount_t *mnt = NULL;
@@ -291,14 +291,14 @@ int vfs_read(file_node_t *node, size_t size, uint8_t *buf)
         return mnt->fs->fs_read(node, size, buf, mnt->vbdev, mnt->fs_data);
     }
 
-    return -1;
+    return -ECORRUPT;
 }
 
 int vfs_write(file_node_t *node, size_t size, const uint8_t *buf)
 {
     if (!node)
     {
-        return -1;
+        return -EINVARG;
     }
 
     mount_t *mnt = NULL;
@@ -312,7 +312,7 @@ int vfs_write(file_node_t *node, size_t size, const uint8_t *buf)
         return mnt->fs->fs_write(node, size, buf, mnt->vbdev, mnt->fs_data);
     }
 
-    return -1;
+    return -ECORRUPT;
 }
 
 static void int_to_string(int num, char *str)
@@ -361,7 +361,7 @@ int vfs_readdir(file_node_t *node, int index, dirent_t *dirent)
 {
     if (!node || !dirent)
     {
-        return -1;
+        return -EINVARG;
     }
 
     mount_t *mnt = NULL;
@@ -378,22 +378,23 @@ int vfs_readdir(file_node_t *node, int index, dirent_t *dirent)
         strcpy(dirent->path, int_str);
         dirent->path[int_str_len] = ':';
 
-        if (mnt->fs->fs_readdir(node, index, (char *)((uintptr_t)dirent->path + int_str_len + 1), mnt->vbdev, mnt->fs_data) < 0)
+        int status = mnt->fs->fs_readdir(node, index, (char *)((uintptr_t)dirent->path + int_str_len + 1), mnt->vbdev, mnt->fs_data);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
 
         return 0;
     }
 
-    return -1;
+    return -EUNKNOWN;
 }
 
 int vfs_delete(file_node_t *node)
 {
     if (!node)
     {
-        return -1;
+        return -EINVARG;
     }
 
     mount_t *mnt = NULL;
@@ -407,14 +408,14 @@ int vfs_delete(file_node_t *node)
         return mnt->fs->fs_delete(node, mnt->vbdev, mnt->fs_data);
     }
 
-    return -1;
+    return -ECORRUPT;
 }
 
 int vfs_seek(file_node_t *node, size_t n, uint8_t type)
 {
     if (!node)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (type == SEEK_TYPE_SET)
@@ -431,7 +432,7 @@ int vfs_seek(file_node_t *node, size_t n, uint8_t type)
     }
     else
     {
-        return -1;
+        return -EINVARG;
     }
 
     return 0;
