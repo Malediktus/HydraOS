@@ -24,6 +24,7 @@
 
 #define PROCESS_HEAP_VADDR_BASE 0x200000
 #define PROCESS_MAX_HEAP_PAGES 512
+#define PROCESS_MAX_FILES 512
 
 typedef struct
 {
@@ -53,6 +54,7 @@ typedef struct _process
     size_t num_data_pages;
 
     void *allocations[PROCESS_MAX_HEAP_PAGES];
+    file_node_t *files[PROCESS_MAX_FILES];
 
     uint64_t pid;
 
@@ -73,5 +75,9 @@ int process_unregister(process_t *proc);
 int execute_next_process(void);
 process_t *get_current_process(void);
 void *process_allocate_page(process_t *proc);
+// TODO: free page
+uint64_t process_open_file(process_t *proc, const char *path, uint8_t action);
+int process_close_file(process_t *proc, uint64_t id);
+file_node_t *process_get_file(process_t *proc, uint64_t id);
 
 #endif

@@ -1,4 +1,5 @@
 #include <h_syscall.h>
+#include <ctype.h>
 #include <stddef.h>
 
 void read(uint64_t stream, uint32_t *buf, size_t len)
@@ -136,7 +137,14 @@ static const uint32_t *str = L"Hello User World!\n";
 
 int main(void)
 {
-    write(1, str, 18);
+    if (isspace(' '))
+    {
+        write(1, str, 18);
+    }
+    if (isspace('v'))
+    {
+        write(1, str, 16);
+    }
 
     uint64_t pid = fork();
     if (pid == 0)

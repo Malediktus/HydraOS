@@ -124,6 +124,63 @@ int64_t syscall_mmap(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
     return (int64_t)process_allocate_page(proc);
 }
 
+int64_t syscall_fopen(process_t *proc, int64_t _path, int64_t action, int64_t, int64_t, int64_t, int64_t, task_state_t *)
+{
+    size_t offset = (uint64_t)_path % PAGE_SIZE;
+    uint64_t t = pml4_get_phys(proc->pml4, (char *)((_path / PAGE_SIZE) * PAGE_SIZE), true);
+    if (t == 0)
+    {
+        return -EUNKNOWN;
+    }
+
+    char *path = (char *)(t + offset);
+
+    return (int64_t)process_open_file(proc, path, (uint8_t)action);
+}
+
+int64_t syscall_fclose(process_t *proc, int64_t id, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
+{
+    return (int64_t)process_close_file(proc, (uint64_t)id);
+}
+
+int64_t syscall_fread(process_t *proc, int64_t id, int64_t _buf, int64_t size, int64_t, int64_t, int64_t, task_state_t *)
+{
+    size_t offset = (uint64_t)_buf % PAGE_SIZE;
+    uint64_t t = pml4_get_phys(proc->pml4, (void *)((_buf / PAGE_SIZE) * PAGE_SIZE), true);
+    if (t == 0)
+    {
+        return -EUNKNOWN;
+    }
+
+    void *buf = (void *)(t + offset);
+
+    file_node_t *node = process_get_file(proc, id);
+    if (!node)
+    {
+        return -EINVARG;
+    }
+    return (int64_t)vfs_read(node, size, buf);
+}
+
+int64_t syscall_fwrite(process_t *proc, int64_t id, int64_t _buf, int64_t size, int64_t, int64_t, int64_t, task_state_t *)
+{
+    size_t offset = (uint64_t)_buf % PAGE_SIZE;
+    uint64_t t = pml4_get_phys(proc->pml4, (void *)((_buf / PAGE_SIZE) * PAGE_SIZE), true);
+    if (t == 0)
+    {
+        return -EUNKNOWN;
+    }
+
+    void *buf = (void *)(t + offset);
+
+    file_node_t *node = process_get_file(proc, id);
+    if (!node)
+    {
+        return -EINVARG;
+    }
+    return (int64_t)vfs_write(node, size, buf);
+}
+
 extern page_table_t *kernel_pml4;
 
 int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5, task_state_t *state)
@@ -155,6 +212,18 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
         break;
     case 3:
         res = syscall_mmap(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 4:
+        res = syscall_fopen(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 5:
+        res = syscall_fclose(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 6:
+        res = syscall_fread(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 7:
+        res = syscall_fwrite(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     default:
         break;

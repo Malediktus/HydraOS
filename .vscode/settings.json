@@ -23,6 +23,7 @@
         "task.h": "c",
         "port.h": "c",
         "assert.h": "c",
-        "elf.h": "c"
+        "elf.h": "c",
+        "stdio.h": "c"
     }
 }

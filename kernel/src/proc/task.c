@@ -126,6 +126,7 @@ process_t *process_create(const char *path)
     }
 
     memset(proc->allocations, 0, PROCESS_MAX_HEAP_PAGES * sizeof(void *));
+    memset(proc->files, 0, PROCESS_MAX_FILES * sizeof(file_node_t *));
 
     proc->task->state.rsp = PROCESS_STACK_VADDR_BASE + PROCESS_STACK_SIZE;
     proc->next = NULL;
@@ -352,4 +353,54 @@ void *process_allocate_page(process_t *proc)
     }
 
     return NULL;
+}
+
+uint64_t process_open_file(process_t *proc, const char *path, uint8_t action)
+{
+    for (uint64_t i = 0; i < PROCESS_MAX_FILES; i++)
+    {
+        if (proc->files[i] != 0)
+        {
+            proc->files[i] = vfs_open(path, action);
+            if (!proc->files[i])
+            {
+                return 0;
+            }
+
+            return i+3;
+        }
+    }
+
+    return 0;
+}
+
+int process_close_file(process_t *proc, uint64_t id)
+{
+    if (id < 3)
+    {
+        return -EINVARG;
+    }
+    if (proc->files[id-3] == NULL)
+    {
+        return -EINVARG;
+    }
+
+    int status = vfs_close(proc->files[id-3]);
+    if (status < 0)
+    {
+        return status;
+    }
+
+    proc->files[id-3] = NULL;
+    return 0;
+}
+
+file_node_t *process_get_file(process_t *proc, uint64_t id)
+{
+    if (id < 3)
+    {
+        return NULL;
+    }
+
+    return proc->files[id-3];
 }
