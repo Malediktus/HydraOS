@@ -1,6 +1,5 @@
-#include <h_syscall.h>
-#include <ctype.h>
-#include <stddef.h>
+#include <hydra/driver.h>
+#include <hydra/kernel.h>
 
 void read(uint64_t stream, uint32_t *buf, size_t len)
 {
@@ -133,38 +132,10 @@ void *memset(void *dest, register int val, register size_t len)
     return dest;
 }
 
-static const uint32_t *str = L"Hello User World!\n";
-
 int main(void)
 {
-    if (isspace(' '))
-    {
-        write(1, str, 18);
-    }
-    if (isspace('v'))
-    {
-        write(1, str, 16);
-    }
-
-    uint64_t pid = fork();
-    if (pid == 0)
-    {
-        write(1, L"Forked process\n", 15);
-        while (1);
-    }
-
-    uint32_t c = 0;
-    while (1)
-    {
-        read(0, &c, 1);
-        if (c != 0)
-        {
-            uint8_t packet[2];
-            memcpy(packet, &c, 2);
-            uint32_t ascii = (uint32_t)scancode_to_ascii(packet[0], packet[1]);
-            write(1, &ascii, 1);
-        }
-    }
+    chardev_puts(1, "Hello User World!", CHARDEV_COLOR_WHITE, CHARDEV_COLOR_BLACK);
+    chardev_putc(1, '\n', CHARDEV_COLOR_WHITE, CHARDEV_COLOR_BLACK);
 
     while (1);
     return 0;

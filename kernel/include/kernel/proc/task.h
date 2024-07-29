@@ -8,7 +8,6 @@
 #include <kernel/vmm.h>
 #include <kernel/fs/vfs.h>
 #include <kernel/proc/elf.h>
-#include <kernel/proc/stream.h>
 
 /*
  kernel:  0x100000
@@ -57,11 +56,7 @@ typedef struct _process
     file_node_t *files[PROCESS_MAX_FILES];
 
     uint64_t pid;
-
-    stream_t *stdin;
-    stream_t *stdout;
-    stream_t *stderr;
-
+    
     struct _process *next;
 } process_t;
 

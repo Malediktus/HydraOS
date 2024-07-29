@@ -5,25 +5,16 @@
 #include <kernel/kprintf.h>
 #include <kernel/proc/task.h>
 #include <kernel/string.h>
+#include <kernel/dev/devm.h>
 
-int64_t syscall_read(process_t *proc, int64_t _stream, int64_t data, int64_t size, int64_t, int64_t, int64_t, task_state_t *)
+#define DRIVER_TYPE_CHARDEV 0
+#define DRIVER_TYPE_INPUTDEV 1
+
+int64_t syscall_dread(process_t *proc, int64_t type, int64_t id, int64_t data, int64_t size, int64_t, int64_t, task_state_t *)
 {
-    stream_t *stream = NULL;
-    if (_stream == 0)
+    if (size < 9)
     {
-        stream = proc->stdin;
-    }
-    else if (_stream == 1)
-    {
-        stream = proc->stdout;
-    }
-    else if (_stream == 2)
-    {
-        stream = proc->stderr;
-    }
-    else
-    {
-        return -EINVARG;
+        return -4;
     }
 
     size_t offset = (uint64_t)data % PAGE_SIZE;
@@ -33,31 +24,52 @@ int64_t syscall_read(process_t *proc, int64_t _stream, int64_t data, int64_t siz
         return -EUNKNOWN;
     }
 
-    void *buf = (void *)(t + offset);
+    uint8_t *buf = (uint8_t *)(t + offset);
 
-    return stream_read(stream, buf, size);
+    switch (type)
+    {
+    case DRIVER_TYPE_INPUTDEV:
+        inputdev_t *idev = get_inputdev(id);
+        if (!idev)
+        {
+            return -2;
+        }
+
+        inputpacket_t packet;
+        int res = inputdev_poll(&packet, idev);
+        if (res < 0)
+        {
+            return -3;
+        }
+
+        buf[0] = packet.type;
+        switch (packet.type)
+        {
+        case IPACKET_NULL:
+            break;
+
+        case IPACKET_KEYDOWN:
+        case IPACKET_KEYUP:
+        case IPACKET_KEYREPEAT:
+            buf[1] = packet.modifier;
+            buf[2] = packet.scancode;
+            break;
+        
+        default:
+            return -5;
+        }
+
+        break;
+
+    default:
+        return -1;
+    }
+
+    return 0;
 }
 
-int64_t syscall_write(process_t *proc, int64_t _stream, int64_t data, int64_t size, int64_t, int64_t, int64_t, task_state_t *)
+int64_t syscall_dwrite(process_t *proc, int64_t type, int64_t id, int64_t data, int64_t size, int64_t, int64_t, task_state_t *)
 {
-    stream_t *stream = NULL;
-    if (_stream == 0)
-    {
-        stream = proc->stdin;
-    }
-    else if (_stream == 1)
-    {
-        stream = proc->stdout;
-    }
-    else if (_stream == 2)
-    {
-        stream = proc->stderr;
-    }
-    else
-    {
-        return -EINVARG;
-    }
-
     size_t offset = (uint64_t)data % PAGE_SIZE;
     uint64_t t = pml4_get_phys(proc->pml4, (void *)((data / PAGE_SIZE) * PAGE_SIZE), true);
     if (t == 0)
@@ -65,9 +77,36 @@ int64_t syscall_write(process_t *proc, int64_t _stream, int64_t data, int64_t si
         return -EUNKNOWN;
     }
 
-    void *buf = (void *)(t + offset);
+    uint8_t *buf = (uint8_t *)(t + offset);
 
-    return stream_write(stream, buf, size);
+    switch (type)
+    {
+    case DRIVER_TYPE_CHARDEV:
+        chardev_t *cdev = get_chardev(id);
+        if (!cdev)
+        {
+            return -2;
+        }
+
+        for (size_t i = 0; i < (size_t)size; i++)
+        {
+            chardev_color_t fg = (chardev_color_t)(buf[i+1] & 0xF);
+            chardev_color_t bg = (chardev_color_t)((buf[i+1] >> 4) & 0xF);
+
+            int res = chardev_write(buf[i], fg, bg, cdev);
+            if (res < 0)
+            {
+                return -3;
+            }
+        }
+
+        break;
+
+    default:
+        return -1;
+    }
+
+    return 0;
 }
 
 int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *state)
@@ -119,7 +158,7 @@ int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
     return fork->pid;
 }
 
-int64_t syscall_mmap(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
+int64_t syscall_alloc(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
 {
     return (int64_t)process_allocate_page(proc);
 }
@@ -202,16 +241,16 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
     switch (num)
     {
     case 0:
-        res = syscall_read(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        res = syscall_dread(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     case 1:
-        res = syscall_write(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        res = syscall_dwrite(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     case 2:
         res = syscall_fork(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     case 3:
-        res = syscall_mmap(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        res = syscall_alloc(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     case 4:
         res = syscall_fopen(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);

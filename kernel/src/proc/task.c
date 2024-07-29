@@ -7,46 +7,6 @@
 extern int __kernel_start;
 extern int __kernel_end;
 
-static uint32_t stdin_read(device_handle_t handle)
-{
-    inputpacket_t packet;
-    if (inputdev_poll(&packet, handle.idev) < 0)
-    {
-        // TODO: panic
-        while (1);
-    }
-
-    if (packet.type == IPACKET_NULL || packet.type == IPACKET_KEYUP)
-    {
-        return 0;
-    }
-
-    uint8_t res[2];
-    res[0] = packet.scancode;
-    res[1] = packet.modifier;
-    uint32_t t = 0;
-    memcpy(&t, res, 2);
-    return t;
-}
-
-static void stdout_write(uint32_t data, device_handle_t handle)
-{
-    if (chardev_write((char)data, CHARDEV_COLOR_WHITE, CHARDEV_COLOR_BLACK, handle.cdev))
-    {
-        // TODO: panic
-        while (1);
-    }
-}
-
-static void stderr_write(uint32_t data, device_handle_t handle)
-{
-    if (chardev_write((char)data, CHARDEV_COLOR_RED, CHARDEV_COLOR_BLACK, handle.cdev))
-    {
-        // TODO: panic
-        while (1);
-    }
-}
-
 static uint64_t current_pid = 0;
 process_t *process_create(const char *path)
 {
@@ -131,54 +91,6 @@ process_t *process_create(const char *path)
     proc->task->state.rsp = PROCESS_STACK_VADDR_BASE + PROCESS_STACK_SIZE;
     proc->next = NULL;
 
-    device_handle_t stdin_dev;
-    stdin_dev.type = DEVICE_TYPE_INPUTDEV;
-    stdin_dev.idev = get_inputdev(0);
-    if (!stdin_dev.idev)
-    {
-        process_free(proc);
-        return NULL;
-    }
-
-    proc->stdin = stream_create_driver(stdin_dev, &stdin_read, NULL);
-    if (!proc->stdin)
-    {
-        process_free(proc);
-        return NULL;
-    }
-
-    device_handle_t stdout_dev;
-    stdout_dev.type = DEVICE_TYPE_CHARDEV;
-    stdout_dev.cdev = kprintf_get_cdev();
-    if (!stdout_dev.cdev)
-    {
-        process_free(proc);
-        return NULL;
-    }
-
-    proc->stdout = stream_create_driver(stdout_dev, NULL, &stdout_write);
-    if (!proc->stdout)
-    {
-        process_free(proc);
-        return NULL;
-    }
-
-    device_handle_t stderr_dev;
-    stderr_dev.type = DEVICE_TYPE_CHARDEV;
-    stderr_dev.cdev = kprintf_get_cdev();
-    if (!stderr_dev.cdev)
-    {
-        process_free(proc);
-        return NULL;
-    }
-
-    proc->stderr = stream_create_driver(stderr_dev, NULL, stderr_write);
-    if (!proc->stderr)
-    {
-        process_free(proc);
-        return NULL;
-    }
-
     proc->pid = current_pid++;
 
     return proc;
@@ -189,19 +101,6 @@ void process_free(process_t *proc)
     if (!proc)
     {
         return;
-    }
-
-    if (proc->stdin)
-    {
-        stream_free(proc->stdin);
-    }
-    if (proc->stdout)
-    {
-        stream_free(proc->stdout);
-    }
-    if (proc->stderr)
-    {
-        stream_free(proc->stderr);
     }
 
     if (proc->elf)
