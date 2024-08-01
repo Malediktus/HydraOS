@@ -85,13 +85,54 @@ process_t *process_create(const char *path)
         return NULL;
     }
 
-    memset(proc->allocations, 0, PROCESS_MAX_HEAP_PAGES * sizeof(void *));
-    memset(proc->files, 0, PROCESS_MAX_FILES * sizeof(file_node_t *));
+    memset(proc->streams, 0, PROCESS_MAX_STREAMS * sizeof(stream_t));
 
     proc->task->state.rsp = PROCESS_STACK_VADDR_BASE + PROCESS_STACK_SIZE;
     proc->next = NULL;
 
     proc->pid = current_pid++;
+
+    // stdin
+    device_handle_t stdin_dev;
+    stdin_dev.type = DEVICE_TYPE_INPUTDEV;
+    stdin_dev.idev = get_inputdev(0);
+    if (!stdin_dev.idev)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    int res = stream_create_driver(&proc->streams[0], 0, stdin_dev);
+    if (res < 0)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    // stdout
+    device_handle_t stdout_dev;
+    stdout_dev.type = DEVICE_TYPE_CHARDEV;
+    stdout_dev.cdev = kprintf_get_cdev();
+    if (!stdout_dev.cdev)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    res = stream_create_driver(&proc->streams[1], 0, stdout_dev);
+    if (res < 0)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    // stderr
+    res = stream_create_driver(&proc->streams[2], 0, stdout_dev);
+    if (res < 0)
+    {
+        process_free(proc);
+        return NULL;
+    }
 
     return proc;
 }
@@ -132,11 +173,11 @@ void process_free(process_t *proc)
         kfree(proc->task);
     }
 
-    for (int i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
+    for (int i = 0; i < PROCESS_MAX_STREAMS; i++)
     {
-        if (proc->allocations[i])
+        if (proc->streams[i].type != STREAM_TYPE_NULL)
         {
-            pmm_free(proc->allocations[i]);
+            stream_free(&proc->streams[i]);
         }
     }
 
@@ -229,77 +270,4 @@ int execute_next_process(void)
 process_t *get_current_process(void)
 {
     return current_proc;
-}
-
-void *process_allocate_page(process_t *proc)
-{
-    for (uint64_t i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
-    {
-        if (proc->allocations[i] != 0)
-        {
-            proc->allocations[i] = pmm_alloc();
-            if (!proc->allocations[i])
-            {
-                return NULL;
-            }
-            if (pml4_map(proc->pml4, (void *)(PROCESS_HEAP_VADDR_BASE + i * PAGE_SIZE), proc->allocations[i], PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
-            {
-                return NULL;
-            }
-
-            return (void *)(PROCESS_HEAP_VADDR_BASE + i * PAGE_SIZE);
-        }
-    }
-
-    return NULL;
-}
-
-uint64_t process_open_file(process_t *proc, const char *path, uint8_t action)
-{
-    for (uint64_t i = 0; i < PROCESS_MAX_FILES; i++)
-    {
-        if (proc->files[i] != 0)
-        {
-            proc->files[i] = vfs_open(path, action);
-            if (!proc->files[i])
-            {
-                return 0;
-            }
-
-            return i+3;
-        }
-    }
-
-    return 0;
-}
-
-int process_close_file(process_t *proc, uint64_t id)
-{
-    if (id < 3)
-    {
-        return -EINVARG;
-    }
-    if (proc->files[id-3] == NULL)
-    {
-        return -EINVARG;
-    }
-
-    int status = vfs_close(proc->files[id-3]);
-    if (status < 0)
-    {
-        return status;
-    }
-
-    proc->files[id-3] = NULL;
-    return 0;
-}
-
-file_node_t *process_get_file(process_t *proc, uint64_t id)
-{
-    if (id < 3)
-    {
-        return NULL;
-    }
-
-    return proc->files[id-3];
 }

@@ -35,4 +35,6 @@ int inputdev_free_ref(inputdev_t *idev);
 
 int inputdev_poll(inputpacket_t *packet, inputdev_t *idev);
 
+char inputdev_packet_to_ascii(inputpacket_t *packet);
+
 #endif
