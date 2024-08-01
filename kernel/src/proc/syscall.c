@@ -58,7 +58,7 @@ int64_t syscall_write(process_t *proc, int64_t stream, int64_t data, int64_t siz
     return (int64_t)bytes_written;
 }
 
-/*int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *state)
+int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *state)
 {
     process_t *fork = process_create(proc->path); // TODO: maybe the file changed
     if (!fork)
@@ -74,25 +74,16 @@ int64_t syscall_write(process_t *proc, int64_t stream, int64_t data, int64_t siz
 
     memcpy(&fork->task->state, state, sizeof(task_state_t));
 
-    for (uint64_t i = 0; i < PROCESS_MAX_HEAP_PAGES; i++)
+    for (uint64_t i = 0; i < PROCESS_MAX_STREAMS; i++)
     {
-        if (proc->allocations[i] == 0)
+        if (proc->streams[i].type != STREAM_TYPE_NULL)
         {
-            continue;
-        }
-
-        fork->allocations[i] = pmm_alloc();
-        if (!fork->allocations[i])
-        {
-            // TODO: panic
-            while (1);
-        }
-        memcpy(fork->allocations[i], proc->allocations[i], PAGE_SIZE);
-
-        if (pml4_map(fork->pml4, (void *)(PROCESS_HEAP_VADDR_BASE + i * PAGE_SIZE), fork->allocations[i], PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
-        {
-            // TODO: panic
-            while (1);
+            int res = stream_clone(&proc->streams[i], &fork->streams[i]);
+            if (res < 0)
+            {
+                process_free(fork);
+                return res;
+            }
         }
     }
 
@@ -105,7 +96,7 @@ int64_t syscall_write(process_t *proc, int64_t stream, int64_t data, int64_t siz
     }
 
     return fork->pid;
-}*/
+}
 
 extern page_table_t *kernel_pml4;
 
@@ -132,6 +123,9 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
         break;
     case 1:
         res = syscall_write(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 2:
+        res = syscall_fork(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     default:
         break;

@@ -2,6 +2,19 @@
 
 int main(void)
 {
+    int64_t pid = syscall(2, 0, 0, 0, 0, 0, 0);
+    if (pid < 0)
+    {
+        syscall(1, 1, (uintptr_t)"Failed to fork process!\n", 24, 0, 0, 0);
+        while (1);
+    }
+
+    if (pid != 0)
+    {
+        syscall(1, 1, (uintptr_t)"Forked process!\n", 16, 0, 0, 0);
+        while (1);
+    }
+
     syscall(1, 1, (uintptr_t)"Hello User World!\n", 18, 0, 0, 0);
 
     while (1)

@@ -189,3 +189,25 @@ int stream_flush(stream_t *stream)
 
     return 0;
 }
+
+int stream_clone(stream_t *src, stream_t *dest)
+{
+    switch(src->type)
+    {
+    case STREAM_TYPE_BIDIRECTIONAL:
+        stream_create_bidirectional(dest, src->flags, src->max_size);
+        dest->size = src->size;
+        break;
+    case STREAM_TYPE_FILE:
+        // TODO: implement
+        return -EINVARG;
+        break;
+    case STREAM_TYPE_DRIVER:
+        stream_create_driver(dest, src->flags, src->device);
+        break;
+    default:
+        return -EINVARG;
+    }
+
+    return 0;
+}

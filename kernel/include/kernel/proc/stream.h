@@ -48,5 +48,6 @@ void stream_free(stream_t *stream);
 int stream_read(stream_t *stream, uint8_t *data, size_t size, size_t *bytes_read);
 int stream_write(stream_t *stream, const uint8_t *data, size_t size, size_t *bytes_written);
 int stream_flush(stream_t *stream);
+int stream_clone(stream_t *src, stream_t *dest);
 
 #endif
