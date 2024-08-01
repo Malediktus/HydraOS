@@ -24,3 +24,7 @@ _start:
 
     ;mov edi, eax
 	;call exit
+
+    mov edi, eax
+    mov rax, 3
+    syscall ; exit syscall

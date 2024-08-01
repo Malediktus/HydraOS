@@ -98,6 +98,16 @@ int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
     return fork->pid;
 }
 
+int64_t syscall_exit(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
+{
+    process_unregister(proc);
+    process_free(proc);
+    execute_next_process();
+
+    while (1);
+    // TODO: panic
+}
+
 extern page_table_t *kernel_pml4;
 
 int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5, task_state_t *state)
@@ -126,6 +136,9 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
         break;
     case 2:
         res = syscall_fork(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 3:
+        res = syscall_exit(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     default:
         break;
