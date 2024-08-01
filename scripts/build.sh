@@ -27,6 +27,13 @@ pushd ../libc
 	cp -r include/* /tmp/hydra_root/include/
 popd
 
+pushd ../libhydra
+	echo "Compiling LibHydra"
+	make build/libhydra.a
+	cp build/libhydra.a /tmp/hydra_root/lib/libhydra.a
+	cp -r include/* /tmp/hydra_root/include/
+popd
+
 for dir in ../apps/*/; do
 	if [ -d "$dir" ]; then
 		pushd $dir
