@@ -108,6 +108,16 @@ int64_t syscall_exit(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
     // TODO: panic
 }
 
+int64_t syscall_ping(process_t *proc, int64_t pid, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
+{
+    if (get_process_from_pid((uint64_t)pid) != NULL)
+    {
+        return pid;
+    }
+
+    return 0;
+}
+
 extern page_table_t *kernel_pml4;
 
 int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5, task_state_t *state)
@@ -139,6 +149,9 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
         break;
     case 3:
         res = syscall_exit(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 4:
+        res = syscall_ping(proc, arg0, arg1, arg2, arg3, arg4, arg5, state); // TODO: this is a hack to replace wait because i dont have signals yet
         break;
     default:
         break;

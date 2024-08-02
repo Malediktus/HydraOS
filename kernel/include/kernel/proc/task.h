@@ -68,5 +68,6 @@ int process_register(process_t *proc);
 int process_unregister(process_t *proc);
 int execute_next_process(void);
 process_t *get_current_process(void);
+process_t *get_process_from_pid(uint64_t pid);
 
 #endif

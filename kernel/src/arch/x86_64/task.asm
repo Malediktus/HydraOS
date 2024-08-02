@@ -60,7 +60,8 @@ syscall_wrapper:
     pop qword rdx
     pop qword rcx
     pop qword rbx
-    pop qword rax
+    ;pop qword rax
+    add rsp, 8
 
     pop qword rcx
     pop qword rsp

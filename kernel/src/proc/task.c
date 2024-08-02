@@ -271,3 +271,16 @@ process_t *get_current_process(void)
 {
     return current_proc;
 }
+
+process_t *get_process_from_pid(uint64_t pid)
+{
+    for (process_t *proc = proc_head; proc != NULL; proc = proc->next)
+    {
+        if (proc->pid == pid)
+        {
+            return proc;
+        }
+    }
+
+    return NULL;
+}
