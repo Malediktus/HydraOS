@@ -24,6 +24,8 @@
         "port.h": "c",
         "assert.h": "c",
         "elf.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "stdarg.h": "c",
+        "kernel.h": "c"
     }
 }

@@ -36,7 +36,7 @@ uint64_t syscall_fork(void)
 
 void syscall_exit(uint32_t result)
 {
-    return syscall(_SYSCALL_EXIT, result, 0, 0, 0, 0, 0);
+    syscall(_SYSCALL_EXIT, result, 0, 0, 0, 0, 0);
 }
 
 uint64_t syscall_ping(uint64_t pid)

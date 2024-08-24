@@ -180,22 +180,21 @@ static int load_phdr(elf_file_t *elf_file, Elf64_Phdr *ph, process_t *proc, uint
 
         if (ph->p_memsz > ph->p_filesz)
         {
-            // uninitialized data
             memset(proc->data_pages[*data_pages_index], 0, PAGE_SIZE);
-            *data_pages_index += 1;
-            continue;
         }
-
-        size_t remainder = ph->p_memsz - i * PAGE_SIZE;
-        if (remainder > PAGE_SIZE)
+        else
         {
-            remainder = PAGE_SIZE;
-        }
+            size_t remainder = ph->p_memsz - i * PAGE_SIZE;
+            if (remainder > PAGE_SIZE)
+            {
+                remainder = PAGE_SIZE;
+            }
 
-        status = vfs_read(elf_file->node, remainder, proc->data_pages[*data_pages_index]);
-        if (status < 0)
-        {
-            return status;
+            status = vfs_read(elf_file->node, remainder, proc->data_pages[*data_pages_index]);
+            if (status < 0)
+            {
+                return status;
+            }
         }
 
         int flags = PAGE_PRESENT | PAGE_USER;
@@ -229,6 +228,10 @@ int elf_load_and_map(process_t *proc, elf_file_t *elf_file)
     for (int i = 0; i < header->e_phnum; i++)
     {
         Elf64_Phdr *phdr = &phdrs[i];
+        if (phdr->p_type != PT_LOAD)
+        {
+            continue;
+        }
         proc->num_data_pages += (phdr->p_memsz + PAGE_SIZE - 1) / PAGE_SIZE;
     }
 
