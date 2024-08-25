@@ -26,6 +26,7 @@
         "elf.h": "c",
         "stdio.h": "c",
         "stdarg.h": "c",
-        "kernel.h": "c"
+        "kernel.h": "c",
+        "inputdev.h": "c"
     }
 }

@@ -12,8 +12,8 @@ int main(void)
 
     if (pid == 0)
     {
-        syscall_write(1, "Forked process!\n", 16);
-        while (fgetc(stdin) == 0);
+        syscall_write(1, "Forked process! Press enter to continue... \n", 43);
+        while (fgetc(stdin) != '\n');
 
         return 0;
     }
