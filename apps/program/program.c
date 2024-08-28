@@ -6,13 +6,13 @@ int main(void)
     int64_t pid = syscall_fork();
     if (pid < 0)
     {
-        syscall_write(1, "Failed to fork process!\n", 24);
+        fputs("Failed to fork process!\n", stdout);
         return 0;
     }
 
     if (pid == 0)
     {
-        syscall_write(1, "Forked process! Press enter to continue... \n", 43);
+        fputs("Forked process! Press enter to continue... \n", stdout);
         while (fgetc(stdin) != '\n');
 
         return 0;
@@ -20,7 +20,7 @@ int main(void)
 
     while (syscall_ping(pid) == pid);
 
-    syscall_write(1, "Hello User World!\n", 18);
+    fputs("Hello User World!\n", stdout);
 
     while (1)
     {
@@ -30,7 +30,7 @@ int main(void)
             continue;
         }
 
-        syscall_write(1, &ascii, 1);
+        fputc(ascii, stdout);
     }
 
     return 0;
