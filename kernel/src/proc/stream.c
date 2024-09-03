@@ -1,5 +1,6 @@
 #include <kernel/proc/stream.h>
 #include <kernel/kmm.h>
+#include <kernel/string.h>
 
 int stream_create_bidirectional(stream_t *stream, uint8_t flags, size_t size)
 {
@@ -66,6 +67,8 @@ int stream_read(stream_t *stream, uint8_t *data, size_t size, size_t *bytes_read
     {
         return -EINVARG;
     }
+
+    memset(data, 0, size);
 
     *bytes_read = 0;
     switch (stream->type)
