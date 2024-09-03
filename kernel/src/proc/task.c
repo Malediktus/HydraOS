@@ -137,6 +137,104 @@ process_t *process_create(const char *path)
     return proc;
 }
 
+process_t *process_clone(process_t *_proc)
+{
+    process_t *proc = kmalloc(sizeof(process_t));
+    if (!proc)
+    {
+        return NULL;
+    }
+
+    memset(proc, 0, sizeof(process_t));
+
+    proc->elf = elf_load(_proc->path);
+    if (!proc->elf)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    proc->task = kmalloc(sizeof(task_t));
+    if (!proc->task)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    memcpy(&proc->task->state, &_proc->task->state, sizeof(task_state_t));
+
+    strncpy(proc->path, _proc->path, MAX_PATH);
+    proc->pml4 = pmm_alloc();
+    memset(proc->pml4, 0, PAGE_SIZE);
+    if (!proc->pml4)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    proc->task->parent = proc;
+
+    for (uintptr_t i = (uintptr_t)&__kernel_start; i < (uintptr_t)&__kernel_end; i += PAGE_SIZE)
+    {
+        if (pml4_map(proc->pml4, (void *)i, (void *)i, PAGE_PRESENT | PAGE_WRITABLE) < 0)
+        {
+            process_free(proc);
+            return NULL;
+        }
+    }
+
+    proc->task->num_stack_pages = _proc->task->num_stack_pages;
+    proc->task->stack_pages = kmalloc(proc->task->num_stack_pages);
+    if (!proc->task->stack_pages)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    for (size_t i = 0; i < proc->task->num_stack_pages; i++)
+    {
+        proc->task->stack_pages[i] = pmm_alloc();
+        if (!proc->task->stack_pages[i])
+        {
+            process_free(proc);
+            return NULL;
+        }
+
+        memcpy(proc->task->stack_pages[i], _proc->task->stack_pages[i], PAGE_SIZE);
+
+        if (pml4_map(proc->pml4, (void *)(PROCESS_STACK_VADDR_BASE + (PROCESS_STACK_SIZE - i * PAGE_SIZE)), proc->task->stack_pages[i], PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER) < 0)
+        {
+            process_free(proc);
+            return NULL;
+        }
+    }
+
+    if (elf_load_and_map_copy(proc, proc->elf, _proc) < 0)
+    {
+        process_free(proc);
+        return NULL;
+    }
+
+    memset(proc->streams, 0, PROCESS_MAX_STREAMS * sizeof(stream_t));
+    for (uint64_t i = 0; i < PROCESS_MAX_STREAMS; i++)
+    {
+        if (_proc->streams[i].type != STREAM_TYPE_NULL)
+        {
+            int res = stream_clone(&_proc->streams[i], &proc->streams[i]);
+            if (res < 0)
+            {
+                process_free(proc);
+                return NULL;
+            }
+        }
+    }
+
+    proc->next = NULL;
+    proc->pid = current_pid++;
+    
+    return proc;
+}
+
 void process_free(process_t *proc)
 {
     if (!proc)
@@ -189,6 +287,7 @@ process_t *current_proc = NULL;
 
 int process_register(process_t *proc)
 {
+    proc->next = NULL;
     if (!proc_head)
     {
         proc_head = proc;
@@ -223,9 +322,29 @@ int process_unregister(process_t *proc)
     {
         if (tail->next == proc)
         {
+            if (proc_head == proc)
+            {
+                proc_head = tail;
+            }
+
             tail->next = proc->next;
+            if (tail->next == tail)
+            {
+                tail->next = NULL;
+            }
             return 0;
         }
+    }
+
+    if (proc_head == proc)
+    {
+        proc_head = proc->next;
+    }
+
+    if (!proc_head)
+    {
+        while (1);
+        // TODO: panic
     }
 
     return -EINVARG; // not found

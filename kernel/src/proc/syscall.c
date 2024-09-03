@@ -60,31 +60,11 @@ int64_t syscall_write(process_t *proc, int64_t stream, int64_t data, int64_t siz
 
 int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *state)
 {
-    process_t *fork = process_create(proc->path); // TODO: maybe the file changed
+    process_t *fork = process_clone(proc); // TODO: maybe the file changed
     if (!fork)
     {
         while (1);
         // TODO: panic
-    }
-
-    for (size_t i = 0; i < fork->task->num_stack_pages; i++)
-    {
-        memcpy(fork->task->stack_pages[i], proc->task->stack_pages[i], PAGE_SIZE);
-    }
-
-    memcpy(&fork->task->state, state, sizeof(task_state_t));
-
-    for (uint64_t i = 0; i < PROCESS_MAX_STREAMS; i++)
-    {
-        if (proc->streams[i].type != STREAM_TYPE_NULL)
-        {
-            int res = stream_clone(&proc->streams[i], &fork->streams[i]);
-            if (res < 0)
-            {
-                process_free(fork);
-                return res;
-            }
-        }
     }
 
     fork->task->state.rax = 0; // return value
@@ -108,7 +88,7 @@ int64_t syscall_exit(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
     // TODO: panic
 }
 
-int64_t syscall_ping(process_t *proc, int64_t pid, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
+int64_t syscall_ping(process_t *, int64_t pid, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
 {
     if (get_process_from_pid((uint64_t)pid) != NULL)
     {
@@ -134,6 +114,8 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
         // TODO: panic
         while (1);
     }
+
+    memcpy(&proc->task->state, state, sizeof(task_state_t));
 
     int64_t res = -1;
     switch (num)

@@ -63,6 +63,7 @@ void syscall_init(void);
 
 process_t *process_create(const char *path);
 void process_free(process_t *proc);
+process_t *process_clone(process_t *proc);
 
 int process_register(process_t *proc);
 int process_unregister(process_t *proc);

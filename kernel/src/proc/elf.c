@@ -152,7 +152,7 @@ void elf_free(elf_file_t *file)
     kfree(file);
 }
 
-static int load_phdr(elf_file_t *elf_file, Elf64_Phdr *ph, process_t *proc, uint64_t *data_pages_index)
+static int load_phdr(elf_file_t *elf_file, Elf64_Phdr *ph, process_t *proc, uint64_t *data_pages_index, process_t *original)
 {
     if (!ph)
     {
@@ -180,7 +180,14 @@ static int load_phdr(elf_file_t *elf_file, Elf64_Phdr *ph, process_t *proc, uint
 
         if (ph->p_memsz > ph->p_filesz)
         {
-            memset(proc->data_pages[*data_pages_index], 0, PAGE_SIZE);
+            if (original)
+            {
+                memcpy(proc->data_pages[*data_pages_index], original->data_pages[*data_pages_index], PAGE_SIZE);
+            }
+            else
+            {
+                memset(proc->data_pages[*data_pages_index], 0, PAGE_SIZE);
+            }
         }
         else
         {
@@ -244,7 +251,42 @@ int elf_load_and_map(process_t *proc, elf_file_t *elf_file)
     uint64_t data_pages_index = 0;
     for (Elf64_Half i = 0; i < header->e_phnum; i++)
     {
-        int status = load_phdr(elf_file, &phdrs[i], proc, &data_pages_index);
+        int status = load_phdr(elf_file, &phdrs[i], proc, &data_pages_index, NULL);
+        if (status < 0)
+        {
+            return status;
+        }
+    }
+
+    return 0;
+}
+
+int elf_load_and_map_copy(process_t *proc, elf_file_t *elf_file, process_t *original) // copys the data sections (useful for forking
+{
+    Elf64_Ehdr *header = elf_header(elf_file);
+    Elf64_Phdr *phdrs = elf_pheader(header);
+
+    proc->num_data_pages = 0;
+    for (int i = 0; i < header->e_phnum; i++)
+    {
+        Elf64_Phdr *phdr = &phdrs[i];
+        if (phdr->p_type != PT_LOAD)
+        {
+            continue;
+        }
+        proc->num_data_pages += (phdr->p_memsz + PAGE_SIZE - 1) / PAGE_SIZE;
+    }
+
+    proc->data_pages = kmalloc(proc->num_data_pages * sizeof(void *));
+    if (!proc->data_pages)
+    {
+        return -ENOMEM;
+    }
+
+    uint64_t data_pages_index = 0;
+    for (Elf64_Half i = 0; i < header->e_phnum; i++)
+    {
+        int status = load_phdr(elf_file, &phdrs[i], proc, &data_pages_index, original);
         if (status < 0)
         {
             return status;

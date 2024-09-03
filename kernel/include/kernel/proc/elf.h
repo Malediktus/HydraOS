@@ -139,5 +139,6 @@ uint64_t elf_entry(elf_file_t *file);
 elf_file_t *elf_load(const char *path);
 void elf_free(elf_file_t *file);
 int elf_load_and_map(struct _process *proc, elf_file_t *elf_file);
+int elf_load_and_map_copy(struct _process *proc, elf_file_t *elf_file, struct _process *original); // copys the data sections (useful for forking)
 
 #endif
