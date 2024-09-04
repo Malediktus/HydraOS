@@ -20,6 +20,8 @@ int main(void)
 
     while (syscall_ping(pid) == pid);
 
+    printf("test %s, %d%c", "ahhh", 5, '\n');
+    fprintf(stdout, "test %s, %d%c", "ahhh", 5, '\n');
     fputs("Hello User World!\n", stdout);
 
     while (1)

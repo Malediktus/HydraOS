@@ -26,15 +26,30 @@ int fputs(const char *st, FILE *f);
 size_t fread(char *s, size_t n, size_t u, FILE *f);
 size_t fwrite(const char *st, size_t n, size_t u, FILE *f);
 char *gets(char *s);
-int putc(char c, FILE *f);
 int putchar(char c);
-int printf(const char *st, ...);
-int fprintf(FILE *f, const char *st, ...);
-int vfprintf(FILE *f, const char *st, va_list va);
-int snprintf(char *s, size_t n, const char *ct, ...);
-int sprintf(char *s, const char *ct, ...);
-int vprintf(const char *st, va_list va);
-int vsnprintf(char *s, size_t n, const char *ct, va_list va);
-int vsprintf(char *s, const char *ct, va_list);
+
+#define printf printf_
+int printf_(const char *st, ...);
+
+#define fprintf fprintf_
+int fprintf_(FILE *f, const char *st, ...);
+
+#define vfprintf_ vfprintf
+int vfprintf_(FILE *f, const char *st, va_list va);
+
+#define snprintf snprintf_
+int snprintf_(char *s, size_t n, const char *ct, ...);
+
+#define sprintf sprintf_
+int sprintf_(char *s, const char *ct, ...);
+
+#define vprintf vprintf_
+int vprintf_(const char *st, va_list va);
+
+#define vsnprintf vsnprintf_
+int vsnprintf_(char *s, size_t n, const char *ct, va_list va);
+
+#define vsprintf vsprintf_
+int vsprintf_(char *s, const char *ct, va_list va);
 
 #endif

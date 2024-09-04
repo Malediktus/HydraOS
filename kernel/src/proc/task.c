@@ -134,6 +134,8 @@ process_t *process_create(const char *path)
         return NULL;
     }
 
+    elf_free(proc->elf);
+
     return proc;
 }
 
@@ -231,6 +233,8 @@ process_t *process_clone(process_t *_proc)
 
     proc->next = NULL;
     proc->pid = current_pid++;
+
+    elf_free(proc->elf);
     
     return proc;
 }
