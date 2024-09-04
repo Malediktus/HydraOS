@@ -1512,7 +1512,7 @@ file_node_t *fat32_open(const char *path, uint8_t action, virtual_blockdev_t *bd
     node->write_date = info.write_date;
     node->last_access_date = info.last_access_date;
     node->flags = info.flags;
-    node->_data = 0; // TODO: maybe store cluster number here
+    node->_data = 0; // TODO: maybe cache cluster number here
 
     return node;
 }

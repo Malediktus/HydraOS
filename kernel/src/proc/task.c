@@ -343,8 +343,7 @@ int process_unregister(process_t *proc)
 
     if (!proc_head)
     {
-        while (1);
-        // TODO: panic
+        KPANIC("no process running");
     }
 
     return -EINVARG; // not found

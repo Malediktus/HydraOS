@@ -1,6 +1,7 @@
 #include <kernel/proc/scheduler.h>
 #include <kernel/proc/task.h>
 #include <kernel/pit.h>
+#include <kernel/kprintf.h>
 
 static void scheduler_handler(interrupt_frame_t *frame, uint32_t)
 {
@@ -30,8 +31,7 @@ static void scheduler_handler(interrupt_frame_t *frame, uint32_t)
     proc->task->state.rsp = frame->rsp;
 
     execute_next_process();
-    while (1);
-    // TODO: panic
+    KPANIC("failed to execute process");
 }
 
 void scheduler_init(void)

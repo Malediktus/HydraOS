@@ -1,6 +1,7 @@
 #include <kernel/proc/stream.h>
 #include <kernel/kmm.h>
 #include <kernel/string.h>
+#include <kernel/kprintf.h>
 
 int stream_create_bidirectional(stream_t *stream, uint8_t flags, size_t size)
 {
@@ -56,7 +57,7 @@ void stream_free(stream_t *stream)
     case STREAM_TYPE_DRIVER:
         break;
     default:
-        // TODO: PANIC
+        KPANIC("invalid stream type");
         break;
     }
 }

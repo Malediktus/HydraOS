@@ -63,16 +63,14 @@ int64_t syscall_fork(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
     process_t *fork = process_clone(proc); // TODO: maybe the file changed
     if (!fork)
     {
-        while (1);
-        // TODO: panic
+        KPANIC("failed to fork process");
     }
 
     fork->task->state.rax = 0; // return value
 
     if (process_register(fork) < 0)
     {
-        while (1);
-        // TODO: panic
+        KPANIC("failed to register process");
     }
 
     return fork->pid;
@@ -84,8 +82,7 @@ int64_t syscall_exit(process_t *proc, int64_t, int64_t, int64_t, int64_t, int64_
     process_free(proc);
     execute_next_process();
 
-    while (1);
-    // TODO: panic
+    KPANIC("failed to execute process");
 }
 
 int64_t syscall_ping(process_t *, int64_t pid, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
@@ -104,14 +101,14 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
 {
     if (pml4_switch(kernel_pml4) < 0)
     {
-        // TODO: panic
+        KPANIC("failed to switch pml4");
         while (1);
     }
 
     process_t *proc = get_current_process();
     if (!proc)
     {
-        // TODO: panic
+        KPANIC("failed get current process");
         while (1);
     }
 
@@ -133,7 +130,7 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
         res = syscall_exit(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     case 4:
-        res = syscall_ping(proc, arg0, arg1, arg2, arg3, arg4, arg5, state); // TODO: this is a hack to replace wait because i dont have signals yet
+        res = syscall_ping(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     default:
         break;
@@ -141,8 +138,7 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
 
     if (pml4_switch(proc->pml4) < 0)
     {
-        // TODO: panic
-        while (1);
+        KPANIC("failed to switch pml4");
     }
 
     return res;

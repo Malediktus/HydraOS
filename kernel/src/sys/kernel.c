@@ -235,14 +235,12 @@ void kmain(uint64_t multiboot2_struct_addr)
 
     if (register_partition_table(&mbr_partition_table) < 0)
     {
-        kprintf("\x1b[31mfailed to register mbr partition table\n");
-        while (1);
+        KPANIC("failed to register mbr partition table");
     }
 
     if (register_filesystem(&fat32_filesystem) < 0)
     {
-        kprintf("\x1b[31mfailed to register fat32 filesystem\n");
-        while (1);
+        KPANIC("failed to register fat32 filesystem");
     }
 
     uint64_t i = 0;
@@ -275,8 +273,7 @@ void kmain(uint64_t multiboot2_struct_addr)
             {
                 if (vfs_mount_blockdev(part) < 0)
                 {
-                    kprintf("\x1b[31mfailed to mount partition\n");
-                    while (1);
+                    KPANIC("failed to mount partition");
                 }
                 kprintf("mounted\n");
             }
@@ -290,13 +287,11 @@ void kmain(uint64_t multiboot2_struct_addr)
     process_t *proc = process_create("0:/bin/program");
     if (!proc)
     {
-        kprintf("\x1b[31mfailed to load '0:/bin/program'\n");
-        while (1);
+        KPANIC("failed to load '0:/bin/program'");
     }
     if (process_register(proc) < 0)
     {
-        kprintf("\x1b[31mfailed to register process\n");
-        while (1);
+        KPANIC("failed to register process");
     }
 
     scheduler_init();
@@ -304,6 +299,5 @@ void kmain(uint64_t multiboot2_struct_addr)
     syscall_init();
     execute_next_process();
 
-    kprintf("\x1b[31mfailed to launch '0:/bin/program'\n");
-    while (1);
+    KPANIC("failed to launch '0:/bin/program'");
 }
