@@ -95,6 +95,29 @@ int64_t syscall_ping(process_t *, int64_t pid, int64_t, int64_t, int64_t, int64_
     return 0;
 }
 
+int64_t syscall_exec(process_t *proc, int64_t _path, int64_t, int64_t, int64_t, int64_t, int64_t, task_state_t *)
+{
+    const char *path = process_get_pointer(proc, (uintptr_t)path);
+    process_t *exec = process_create(path);
+    if (!exec)
+    {
+        KPANIC("failed to create process");
+    }
+
+    exec->pid = proc->pid;
+
+    process_unregister(proc);
+    process_free(proc);
+
+    if (process_register(proc) < 0)
+    {
+        KPANIC("failed to register process");
+    }
+
+    execute_next_process();
+    KPANIC("failed to execute process");
+}
+
 extern page_table_t *kernel_pml4;
 
 int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5, task_state_t *state)
@@ -131,6 +154,9 @@ int64_t syscall_handler(uint64_t num, int64_t arg0, int64_t arg1, int64_t arg2, 
         break;
     case 4:
         res = syscall_ping(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
+        break;
+    case 5:
+        res = syscall_exec(proc, arg0, arg1, arg2, arg3, arg4, arg5, state);
         break;
     default:
         break;
