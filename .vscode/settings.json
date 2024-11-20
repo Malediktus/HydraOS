@@ -28,5 +28,6 @@
         "stdarg.h": "c",
         "kernel.h": "c",
         "inputdev.h": "c"
+        "efi.h": "c"
     }
 }
