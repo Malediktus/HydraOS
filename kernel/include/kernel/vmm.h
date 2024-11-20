@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <kernel/status.h>
 #include <kernel/pmm.h>
 
 #define PAGE_PRESENT 0x1                 // Present
@@ -29,5 +30,8 @@ uint64_t pml4_get_phys(page_table_t *pml4, void *virt, bool user);
 
 // WARNING: pml4 needs to be a physical address
 int pml4_switch(page_table_t *pml4);
+
+void *page_align_address_lower(void *addr);
+void *page_align_address_higer(void *addr);
 
 #endif

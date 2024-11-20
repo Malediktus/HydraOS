@@ -19,6 +19,15 @@
         "scheduler.h": "c",
         "h_syscall.h": "c",
         "stream.h": "c",
+        "stdint.h": "c",
+        "task.h": "c",
+        "port.h": "c",
+        "assert.h": "c",
+        "elf.h": "c",
+        "stdio.h": "c",
+        "stdarg.h": "c",
+        "kernel.h": "c",
+        "inputdev.h": "c"
         "efi.h": "c"
     }
 }

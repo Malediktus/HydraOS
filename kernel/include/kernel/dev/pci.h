@@ -2,6 +2,7 @@
 #define _KERNEL_PCI_H
 
 #include <kernel/dev/chardev.h>
+#include <kernel/status.h>
 #include <stddef.h>
 #include <stdbool.h>
 

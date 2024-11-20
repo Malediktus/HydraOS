@@ -32,6 +32,13 @@ pushd ../libc
     cp -r include/* /tmp/hydra_root/include/
 popd
 
+pushd ../libhydra
+	echo "Compiling LibHydra"
+	make build/libhydra.a
+	cp build/libhydra.a /tmp/hydra_root/lib/libhydra.a
+	cp -r include/* /tmp/hydra_root/include/
+popd
+
 for dir in ../apps/*/; do
     if [ -d "$dir" ]; then
         pushd $dir
@@ -74,7 +81,7 @@ sudo cp -rf /tmp/hydra_root/* /mnt
 if [[ $HYDRAOS_BOOT_SYSTEM == 'UEFI' ]]; then
     source uefifs.sh
 elif [[ $HYDRAOS_BOOT_SYSTEM == 'GRUB' ]]; then
-    sudo grub-install --root-directory=/mnt --no-floppy --modules="normal part_msdos multiboot2" /dev/loop0
+    sudo grub-install --target=i386-pc --root-directory=/mnt --no-floppy --modules="normal part_msdos multiboot2" /dev/loop0
 else
     sudo dd if=../bootloader/build/bootsector.bin of=/dev/loop0 conv=notrunc bs=446 count=1
     sudo dd if=../bootloader/build/bootloader.bin of=/dev/loop0 conv=notrunc bs=512 seek=1

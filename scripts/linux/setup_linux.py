@@ -107,6 +107,40 @@ class LinuxInstaller(Installer):
 
         return True
 
+    def install_gcc(self) -> bool:
+        if PackageManager.is_package_installed('gcc'):
+            print('info: upgrading "gcc"')
+            if not PackageManager.upgrade_package('gcc'):
+                print('error: failed to upgrade package "gcc"')
+                return False
+
+            return True
+        if not cli.query_yes_no("gcc is not installed... install it?"):
+            return False
+
+        if not PackageManager.install_package('gcc'):
+            print('error: failed to install package "gcc"')
+            return False
+
+        return True
+
+    def install_gpp(self) -> bool:
+        if PackageManager.is_package_installed('g++'):
+            print('info: upgrading "g++"')
+            if not PackageManager.upgrade_package('g++'):
+                print('error: failed to upgrade package "g++"')
+                return False
+
+            return True
+        if not cli.query_yes_no("g++ is not installed... install it?"):
+            return False
+
+        if not PackageManager.install_package('g++'):
+            print('error: failed to install package "g++"')
+            return False
+
+        return True
+
     def is_x86_64_elf_binutils_installed(self) -> bool:
         try:
             result = subprocess.run(
@@ -137,7 +171,7 @@ class LinuxInstaller(Installer):
                     return False
 
         try:
-            subprocess.run(['sh', 'linux/install_x86_64-elf-binutils.sh'], check=True)
+            subprocess.run(['bash', 'linux/install_x86_64-elf-binutils.sh'], check=True)
             return True
         except subprocess.CalledProcessError:
             print('error: failed to execute installation script for x86_64-elf-binutils')
@@ -157,7 +191,7 @@ class LinuxInstaller(Installer):
             return True
 
         try:
-            subprocess.run(['sh', 'linux/install_x86_64-elf-gcc.sh'], check=True)
+            subprocess.run(['bash', 'linux/install_x86_64-elf-gcc.sh'], check=True)
             return True
         except subprocess.CalledProcessError:
             print('error: failed to execute installation script for x86_64-elf-gcc')

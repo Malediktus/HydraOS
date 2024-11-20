@@ -5,7 +5,7 @@
 chardev_t *e9_create(void);
 chardev_t *vga_create(void);
 
-blockdev_t *ide_create(size_t index);
+blockdev_t *ide_create(size_t index, pci_device_t *pci_device);
 
 inputdev_t *ps2_create(void);
 
@@ -32,7 +32,7 @@ static int init_char_devices(void)
     chardevs = kmalloc(sizeof(chardev_t *) * CHARDEVS_CAPACITY_INCREASE);
     if (!chardevs)
     {
-        return -1;
+        return -ENOMEM;
     }
 
     chardevs_capacity = CHARDEVS_CAPACITY_INCREASE;
@@ -41,7 +41,7 @@ static int init_char_devices(void)
     chardevs[chardevs_size] = e9_create();
     if (!chardevs[chardevs_size])
     {
-        return -1;
+        return -EUNKNOWN;
     }
     chardevs_size++;
 
@@ -53,7 +53,7 @@ static int init_block_devices(void)
     blockdevs = kmalloc(sizeof(blockdev_t *) * BLOCKDEVS_CAPACITY_INCREASE);
     if (!blockdevs)
     {
-        return -1;
+        return -ENOMEM;
     }
 
     blockdevs_capacity = BLOCKDEVS_CAPACITY_INCREASE;
@@ -67,7 +67,7 @@ static int init_input_devices(void)
     inputdevs = kmalloc(sizeof(inputdev_t *) * INPUTDEVS_CAPACITY_INCREASE);
     if (!inputdevs)
     {
-        return -1;
+        return -ENOMEM;
     }
 
     inputdevs_capacity = INPUTDEVS_CAPACITY_INCREASE;
@@ -76,7 +76,7 @@ static int init_input_devices(void)
     inputdevs[inputdevs_size] = ps2_create();
     if (!inputdevs[inputdevs_size])
     {
-        return -1;
+        return -ENOMEM;
     }
     inputdevs_size++;
 
@@ -87,7 +87,7 @@ static int try_init_char_device(pci_device_t *pci_dev)
 {
     if (pci_dev->class_code != PCI_CLASS_DISPLAY_CONTROLLER)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (pci_dev->subclass_code == PCI_SUBCLASS_VGA_COMP_CONTROLLER)
@@ -101,7 +101,7 @@ static int try_init_char_device(pci_device_t *pci_dev)
         chardevs[chardevs_size] = vga_create();
         if (!chardevs[chardevs_size])
         {
-            return -1;
+            return -EUNKNOWN;
         }
         chardevs_size++;
         return 0;
@@ -114,7 +114,7 @@ static int try_init_block_device(pci_device_t *pci_dev)
 {
     if (pci_dev->class_code != PCI_CLASS_MASS_STORAGE_CONTROLLER)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (pci_dev->subclass_code == PCI_SUBCLASS_IDE_CONTROLLER)
@@ -127,14 +127,13 @@ static int try_init_block_device(pci_device_t *pci_dev)
 
         for (size_t i = 0; i < 4; i++)
         {
-            blockdevs[blockdevs_size] = ide_create(i);
+            blockdevs[blockdevs_size] = ide_create(i, pci_dev);
             if (!blockdevs[blockdevs_size])
             {
                 continue;
             }
             blockdevs_size++;
         }
-        return 0;
     }
 
     return 0;
@@ -142,19 +141,22 @@ static int try_init_block_device(pci_device_t *pci_dev)
 
 int init_devices(void)
 {
-    if (init_char_devices() < 0)
+    int status = init_char_devices();
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
-    if (init_block_devices() < 0)
+    status = init_block_devices();
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
-    if (init_input_devices() < 0)
+    status = init_input_devices();
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
     for (size_t i = 0; i < MAX_PCI_DEVICES; i++)
@@ -167,16 +169,18 @@ int init_devices(void)
 
         if (pci_dev->class_code == PCI_CLASS_DISPLAY_CONTROLLER)
         {
-            if (try_init_char_device(pci_dev) < 0)
+            status = try_init_char_device(pci_dev);
+            if (status < 0)
             {
-                return -1;
+                return status;
             }
         }
         else if (pci_dev->class_code == PCI_CLASS_MASS_STORAGE_CONTROLLER)
         {
-            if (try_init_block_device(pci_dev) < 0)
+            status = try_init_block_device(pci_dev);
+            if (status < 0)
             {
-                return -1;
+                return status;
             }
         }
     }

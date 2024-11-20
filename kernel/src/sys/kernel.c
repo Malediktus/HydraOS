@@ -12,6 +12,7 @@
 #include <kernel/fs/vfs.h>
 #include <kernel/proc/task.h>
 #include <kernel/proc/scheduler.h>
+#include <kernel/pit.h>
 
 extern partition_table_t mbr_partition_table;
 extern filesystem_t fat32_filesystem;
@@ -200,7 +201,7 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    if (kmm_init(kernel_pml4, (get_max_addr() + PAGE_SIZE - 1) / PAGE_SIZE, 8 * PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
+    if (kmm_init(kernel_pml4, 0x1200000, 32 * PAGE_SIZE, 16) < 0) // TODO: make dynamicly grow
     {
         return;
     }
@@ -209,6 +210,18 @@ void kmain(uint64_t multiboot2_struct_addr)
     {
         return;
     }
+
+    if (interrupts_init() < 0)
+    {
+        return;
+    }
+
+    if (pit_init(100) < 0)
+    {
+        return;
+    }
+
+    enable_interrupts();
 
     if (init_devices() < 0)
     {
@@ -220,33 +233,31 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
-    if (interrupts_init() < 0)
-    {
-        return;
-    }
-
     if (register_partition_table(&mbr_partition_table) < 0)
     {
-        kprintf("\x1b[31mfailed to register mbr partition table\n");
-        while (1);
+        KPANIC("failed to register mbr partition table");
     }
 
     if (register_filesystem(&fat32_filesystem) < 0)
     {
-        kprintf("\x1b[31mfailed to register fat32 filesystem\n");
-        while (1);
+        KPANIC("failed to register fat32 filesystem");
     }
 
-    size_t i = 0;
-    blockdev_t *bdev = get_blockdev(i);
-    while (bdev)
+    uint64_t i = 0;
+    blockdev_t *bdev = NULL;
+    do
     {
-        kprintf("found disc with %ld sectors, id %ld\n", bdev->num_blocks, i);
+        i++;
+        bdev = get_blockdev(i-1);
+        if (!bdev)
+        {
+            break;
+        }
+        kprintf("found disc %s with %ld sectors, id %ld\n", bdev->model, bdev->num_blocks, i-1);
 
         if (scan_partition(bdev) < 0)
         {
             kprintf("\x1b[31mfailed to scan partition table\n");
-            bdev = get_blockdev(i++);
             continue;
         }
 
@@ -257,21 +268,17 @@ void kmain(uint64_t multiboot2_struct_addr)
             {
                 break;
             }
+            kprintf(" - parititon type: 0x%x\n", part->type);
             if (part->type == 0x83)
             {
                 if (vfs_mount_blockdev(part) < 0)
                 {
-                    kprintf("\x1b[31mfailed to mount partition\n");
-                    while (1);
+                    KPANIC("failed to mount partition");
                 }
                 kprintf("mounted\n");
             }
-
-            kprintf(" - parititon type: 0x%x\n", part->type);
         }
-
-        bdev = get_blockdev(i++);
-    }
+    } while (i > 0);
 
     kprintf("initializing the kernel\n");
     kprintf("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m \x1b[35mMagenta\x1b[0m \x1b[36mCyan\x1b[0m\n");
@@ -280,24 +287,17 @@ void kmain(uint64_t multiboot2_struct_addr)
     process_t *proc = process_create("0:/bin/program");
     if (!proc)
     {
-        kprintf("\x1b[31mfailed to load '0:/bin/program'\n");
-        while (1);
+        KPANIC("failed to load '0:/bin/program'");
     }
     if (process_register(proc) < 0)
     {
-        kprintf("\x1b[31mfailed to register process\n");
-        while (1);
+        KPANIC("failed to register process");
     }
 
-    if (scheduler_init() < 0)
-    {
-        kprintf("\x1b[31mfailed init scheduler\n");
-        while (1);
-    }
+    scheduler_init();
 
     syscall_init();
     execute_next_process();
 
-    kprintf("\x1b[31mfailed to launch '0:/bin/program'\n");
-    while (1);
+    KPANIC("failed to launch '0:/bin/program'");
 }

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <kernel/status.h>
 
 void enable_interrupts(void);
 void disable_interrupts(void);

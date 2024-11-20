@@ -180,7 +180,7 @@ int verify_boot_sector(boot_sector_t *boot_sector, uint32_t bytes_per_sector)
 {
     if (!(boot_sector->jmp_boot[0] == 0xEB && boot_sector->jmp_boot[2] == 0x90) && boot_sector->jmp_boot[0] != 0xE9)
     {
-        return -1;
+        return -ERECOV;
     }
 
     if (boot_sector->bpb.bytes_per_sector != bytes_per_sector)
@@ -374,7 +374,7 @@ static int is_valid_fat32_filename(const char *filename)
     if (len == 0 || len > 12)
     {
         // Filename must be non-empty and less than or equal to 12 characters (8.3 format)
-        return -1;
+        return -ERECOV;
     }
 
     bool dot_found = false;
@@ -384,13 +384,13 @@ static int is_valid_fat32_filename(const char *filename)
         {
             if (dot_found || i == 0 || i == len - 1)
             {
-                return -1;
+                return -ERECOV;
             }
             dot_found = true;
         }
         else if (!isalnum(filename[i]) || filename[i] == '/')
         {
-            return -1;
+            return -ERECOV;
         }
     }
 
@@ -401,7 +401,7 @@ static int name_to_fat32_nameext(const char *filename, char *nameext)
 {
     if (is_valid_fat32_filename(filename) < 0)
     {
-        return -1;
+        return -ERECOV;
     }
 
     memset(nameext, 0x20, 11);
@@ -578,7 +578,7 @@ static int modify_direntry_in_directory(const char *name, uint32_t directory_clu
             if (direntries[i].name[0] == 0x00)
             {
                 kfree(cluster_buf);
-                return -1;
+                return -ERECOV;
             }
 
             if ((uint8_t)direntries[i].name[0] == 0xE5)
@@ -633,7 +633,7 @@ static int modify_direntry_in_directory(const char *name, uint32_t directory_clu
     }
 
     kfree(cluster_buf);
-    return -1;
+    return -ERECOV;
 }
 
 static directory_entry_t *find_entry_by_index(size_t index, uint32_t directory_cluster_num, char *filename /*256 bytes*/, boot_sector_t *boot_sector, virtual_blockdev_t *dev)
@@ -819,7 +819,7 @@ static uint32_t first_cluster_from_path(const char *path, boot_sector_t *boot_se
     directory_entry_t *direntry = direntry_from_path(path, boot_sector, dev);
     if (!direntry)
     {
-        return -1;
+        return -ERECOV;
     }
 
     return first_cluster_from_direntry(direntry, boot_sector);
@@ -832,7 +832,7 @@ static int modify_direntry(const char *path, directory_entry_t *new_direntry, bo
     char *new_path = get_parent_directory(path);
     if (new_path == NULL)
     {
-        return -1;
+        return -ERECOV;
     }
     char *pch = strtok(new_path, "/");
 
@@ -843,7 +843,7 @@ static int modify_direntry(const char *path, directory_entry_t *new_direntry, bo
         if (!direntry)
         {
             kfree(new_path);
-            return -1;
+            return -ERECOV;
         }
         current_cluster = (((uint32_t)direntry->first_cluster_hi) << 16) | ((uint32_t)direntry->first_cluster_low);
         pch = strtok(NULL, "/");
@@ -857,11 +857,13 @@ static int modify_direntry(const char *path, directory_entry_t *new_direntry, bo
     char *path_end = get_filename(path);
     if (path_end == NULL)
     {
-        return -1;
+        return -ERECOV;
     }
-    if (modify_direntry_in_directory(path_end, first_cluster_from_direntry(direntry, boot_sector), new_direntry, boot_sector, dev) < 0)
+    
+    int status = modify_direntry_in_directory(path_end, first_cluster_from_direntry(direntry, boot_sector), new_direntry, boot_sector, dev);
+    if (status < 0)
     {
-        return -1;
+        return status;
     }
 
     kfree(path_end);
@@ -924,7 +926,7 @@ int new_direntry_in_cluster(const char *dir_path, directory_entry_t *new_direntr
     uint32_t current_cluster = first_cluster_from_path(dir_path, boot_sector, dev);
     if (current_cluster == (uint32_t)-1)
     {
-        return -1;
+        return -ERECOV;
     }
 
     uint32_t bytes_per_cluster = boot_sector->bpb.sectors_per_cluster * boot_sector->bpb.bytes_per_sector;
@@ -932,7 +934,7 @@ int new_direntry_in_cluster(const char *dir_path, directory_entry_t *new_direntr
 
     if (!cluster_buf)
     {
-        return -1;
+        return -ENOMEM;
     }
 
     uint32_t old_cluster = current_cluster;
@@ -963,7 +965,7 @@ int new_direntry_in_cluster(const char *dir_path, directory_entry_t *new_direntr
     if (new_cluster == (uint32_t)-1)
     {
         kfree(cluster_buf);
-        return -1;
+        return -ERECOV;
     }
 
     memset(cluster_buf, 0, bytes_per_cluster);
@@ -980,26 +982,26 @@ int read_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_t 
     directory_entry_t *direntry = direntry_from_path(path, boot_sector, dev);
     if (direntry == NULL || (uintptr_t)direntry == 1)
     {
-        return -1;
+        return -ERECOV;
     }
     if ((direntry->attr & ATTR_DIRECTORY) == ATTR_DIRECTORY)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
 
     direntry->last_access_date = get_fat32_date();
     if (modify_direntry(path, direntry, boot_sector, dev) < 0)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
     kfree(direntry);
 
     uint32_t current_cluster = first_cluster_from_path(path, boot_sector, dev);
     if (current_cluster == (uint32_t)-1)
     {
-        return -1;
+        return -ERECOV;
     }
 
     uint32_t bytes_per_cluster = boot_sector->bpb.sectors_per_cluster * boot_sector->bpb.bytes_per_sector;
@@ -1053,12 +1055,12 @@ int write_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_t
     directory_entry_t *direntry = direntry_from_path(path, boot_sector, dev);
     if (direntry == NULL || (uintptr_t)direntry == 1)
     {
-        return -1;
+        return -ERECOV;
     }
     if ((direntry->attr & ATTR_DIRECTORY) == ATTR_DIRECTORY)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
 
     size_t filesize = direntry->file_size;
@@ -1070,7 +1072,7 @@ int write_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_t
     if (!cluster_buf)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
 
     size_t offset_in_cluster = filesize % cluster_size;
@@ -1098,7 +1100,7 @@ int write_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_t
         {
             kfree(direntry);
             kfree(cluster_buf);
-            return -1;
+            return -ERECOV;
         }
 
         size_t to_copy = (size_left < cluster_size) ? size_left : cluster_size;
@@ -1121,7 +1123,7 @@ int write_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_t
     if (modify_direntry(path, direntry, boot_sector, dev) < 0)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
 
     kfree(direntry);
@@ -1233,7 +1235,7 @@ size_t readdir_fat32(char *res, const char *path, size_t index, boot_sector_t *b
         directory_entry_t *direntry = direntry_from_path(path, boot_sector, dev);
         if (direntry == NULL)
         {
-            return -1;
+            return -ERECOV;
         }
         direntry->last_access_date = get_fat32_date();
         if (modify_direntry(path, direntry, boot_sector, dev) < 0)
@@ -1261,12 +1263,12 @@ int clear_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_t
     directory_entry_t *direntry = direntry_from_path(path, boot_sector, dev);
     if (direntry == NULL || (uintptr_t)direntry == 1)
     {
-        return -1;
+        return -ERECOV;
     }
     if ((direntry->attr & ATTR_DIRECTORY) == ATTR_DIRECTORY)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
 
     uint32_t first_cluster = first_cluster_from_direntry(direntry, boot_sector);
@@ -1288,7 +1290,7 @@ int clear_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_t
     if (modify_direntry(path, direntry, boot_sector, dev) < 0)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
 
     kfree(direntry);
@@ -1300,7 +1302,7 @@ int write_mask_fat32(const char *path, uint32_t mask, boot_sector_t *boot_sector
     directory_entry_t *direntry = direntry_from_path(path, boot_sector, dev);
     if (direntry == NULL || (uintptr_t)direntry == 1)
     {
-        return -1;
+        return -ERECOV;
     }
 
     uint8_t attr = 0;
@@ -1327,7 +1329,7 @@ int write_mask_fat32(const char *path, uint32_t mask, boot_sector_t *boot_sector
     if (modify_direntry(path, direntry, boot_sector, dev) < 0)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
 
     kfree(direntry);
@@ -1339,7 +1341,7 @@ int create_fat32(const char *path, uint32_t mask, uint32_t flags, boot_sector_t 
     file_info_t info;
     if (stat_fat32(&info, path, boot_sector, dev) != NULL)
     {
-        return -1; // file exists
+        return -ERECOV; // file exists
     }
 
     directory_entry_t new_direntry;
@@ -1347,12 +1349,12 @@ int create_fat32(const char *path, uint32_t mask, uint32_t flags, boot_sector_t 
     char *filename = get_filename(path);
     if (!filename)
     {
-        return -1;
+        return -ERECOV;
     }
 
     if (name_to_fat32_nameext(filename, new_direntry.nameext) < 0)
     {
-        return -1;
+        return -ERECOV;
     }
 
     kfree(filename);
@@ -1378,7 +1380,7 @@ int create_fat32(const char *path, uint32_t mask, uint32_t flags, boot_sector_t 
     uint32_t first_cluster = allocate_new_cluster(0x0FFFFFF8, boot_sector, dev);
     if (first_cluster == 0x0FFFFFF8)
     {
-        return -1;
+        return -ERECOV;
     }
     
     new_direntry.attr = attr;
@@ -1396,13 +1398,13 @@ int create_fat32(const char *path, uint32_t mask, uint32_t flags, boot_sector_t 
     char *dirpath = get_parent_directory(path);
     if (!dirpath)
     {
-        return -1;
+        return -ERECOV;
     }
 
     if (new_direntry_in_cluster(dirpath, &new_direntry, boot_sector, dev) < 0)
     {
         kfree(dirpath);
-        return -1;
+        return -ERECOV;
     }
 
     kfree(dirpath);
@@ -1414,12 +1416,12 @@ int delete_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_
     directory_entry_t *direntry = direntry_from_path(path, boot_sector, dev);
     if (direntry == NULL || (uintptr_t)direntry == 1)
     {
-        return -1;
+        return -ERECOV;
     }
     if ((direntry->attr & ATTR_DIRECTORY) == ATTR_DIRECTORY)
     {
         kfree(direntry);
-        return -1;
+        return -ERECOV;
     }
 
     uint32_t first_cluster = first_cluster_from_direntry(direntry, boot_sector);
@@ -1437,21 +1439,21 @@ int delete_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_
     char *dirpath = get_parent_directory(path);
     if (!dirpath)
     {
-        return -1;
+        return -ERECOV;
     }
 
     uint32_t directory_cluster = first_cluster_from_path(dirpath, boot_sector, dev);
     if (directory_cluster == 0)
     {
         kfree(dirpath);
-        return -1;
+        return -ERECOV;
     }
     kfree(dirpath);
 
     char *filename = get_filename(path);
     if (!filename)
     {
-        return -1;
+        return -ERECOV;
     }
 
     directory_entry_t new_direntry;
@@ -1460,7 +1462,7 @@ int delete_fat32(const char *path, boot_sector_t *boot_sector, virtual_blockdev_
     if (modify_direntry_in_directory(filename, directory_cluster, &new_direntry, boot_sector, dev) < 0)
     {
         kfree(filename);
-        return -1;
+        return -ERECOV;
     }
 
     kfree(filename);
@@ -1510,7 +1512,7 @@ file_node_t *fat32_open(const char *path, uint8_t action, virtual_blockdev_t *bd
     node->write_date = info.write_date;
     node->last_access_date = info.last_access_date;
     node->flags = info.flags;
-    node->_data = 0; // TODO: maybe store cluster number here
+    node->_data = 0; // TODO: maybe cache cluster number here
 
     return node;
 }
@@ -1519,7 +1521,7 @@ int fat32_close(file_node_t *node, virtual_blockdev_t *bdev, void *data)
 {
     if (!node)
     {
-        return -1;
+        return -ERECOV;
     }
 
     (void)bdev;
@@ -1534,7 +1536,7 @@ int fat32_read(file_node_t *node, size_t size, uint8_t *buf, virtual_blockdev_t 
 {
     if (read_fat32(node->local_path, (boot_sector_t *)data, bdev, node->offset, size, buf) < 0)
     {
-        return -1;
+        return -ERECOV;
     }
 
     node->offset += size;
@@ -1545,7 +1547,7 @@ int fat32_write(file_node_t *node, size_t size, const uint8_t *buf, virtual_bloc
 {
     if (write_fat32(node->local_path, (boot_sector_t *)data, bdev, size, buf) < 0)
     {
-        return -1;
+        return -ERECOV;
     }
 
     node->offset += size;
@@ -1557,7 +1559,7 @@ int fat32_readdir(file_node_t *node, int index, char *path, virtual_blockdev_t *
     char filename[MAX_PATH];
     if (readdir_fat32(filename, node->local_path, (size_t)index, (boot_sector_t *)data, bdev) == 0)
     {
-        return -1;
+        return -ERECOV;
     }
 
     strncpy(path, node->local_path, MAX_PATH);
@@ -1571,7 +1573,7 @@ int fat32_delete(file_node_t *node, virtual_blockdev_t *bdev, void *data)
 {
     if (delete_fat32(node->local_path, (boot_sector_t *)data, bdev) < 0)
     {
-        return -1;
+        return -ERECOV;
     }
 
     return 0;
@@ -1592,7 +1594,7 @@ int fat32_free(virtual_blockdev_t *bdev, void *data)
     (void)bdev;
     if (!data)
     {
-        return -1;
+        return -ERECOV;
     }
 
     free_fat((boot_sector_t *)data);
@@ -1603,14 +1605,14 @@ int fat32_test(virtual_blockdev_t *bdev)
 {
     if (!bdev)
     {
-        return -1;
+        return -ETEST;
     }
 
     boot_sector_t boot_sector;
     read_fat_device(bdev, 0, 1, (uint8_t *)&boot_sector);
     if (verify_boot_sector(&boot_sector, bdev->bdev->block_size) < 0)
     {
-        return -1;
+        return -ETEST;
     }
 
     return 0;

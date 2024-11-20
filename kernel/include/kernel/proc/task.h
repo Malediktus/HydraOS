@@ -4,13 +4,26 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <kernel/status.h>
 #include <kernel/vmm.h>
-#include <kernel/fs/vfs.h>
 #include <kernel/proc/elf.h>
 #include <kernel/proc/stream.h>
 
+/*
+ kernel:  0x100000
+ heap:    0x200000
+ process: 0x400000
+ stack:   0x800000
+*/
+
+#define PROCESS_VADDR 0x400000
+
 #define PROCESS_STACK_VADDR_BASE 0x800000
 #define PROCESS_STACK_SIZE 4096 * 3
+
+#define PROCESS_HEAP_VADDR_BASE 0x200000
+
+#define PROCESS_MAX_STREAMS 128
 
 typedef struct
 {
@@ -39,23 +52,23 @@ typedef struct _process
     void **data_pages; // physical addresses
     size_t num_data_pages;
 
+    stream_t streams[PROCESS_MAX_STREAMS];
+
     uint64_t pid;
-
-    stream_t *stdin;
-    stream_t *stdout;
-    stream_t *stderr;
-
+    
     struct _process *next;
 } process_t;
 
 void syscall_init(void);
 
 process_t *process_create(const char *path);
-int process_free(process_t *proc);
+void process_free(process_t *proc);
+process_t *process_clone(process_t *proc);
 
 int process_register(process_t *proc);
 int process_unregister(process_t *proc);
 int execute_next_process(void);
 process_t *get_current_process(void);
+process_t *get_process_from_pid(uint64_t pid);
 
 #endif

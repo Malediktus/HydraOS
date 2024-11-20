@@ -4,6 +4,7 @@
 #include <kernel/dev/chardev.h>
 #include <kernel/dev/blockdev.h>
 #include <kernel/dev/inputdev.h>
+#include <kernel/status.h>
 #include <stddef.h>
 
 typedef enum

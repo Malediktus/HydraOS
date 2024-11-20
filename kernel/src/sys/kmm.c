@@ -112,7 +112,7 @@ int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t _alig
 {
     if (!kernel_pml4 || base == 0 || (size & (size - 1)) != 0 || (_alignment & (_alignment - 1)) != 0)
     {
-        return -1;
+        return -EINVARG;
     }
 
     if (_alignment < sizeof(buddy_node_t))
@@ -122,7 +122,7 @@ int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t _alig
 
     if (((uintptr_t)base % _alignment) != 0)
     {
-        return -1;
+        return -EINVARG;
     }
 
     for (size_t i = 0; i < size / PAGE_SIZE; i++)
@@ -130,12 +130,13 @@ int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t _alig
         void *page = pmm_alloc();
         if (!page)
         {
-            return -1;
+            return -ENOMEM;
         }
 
-        if (pml4_map(kernel_pml4, (void *)(base + i * PAGE_SIZE), page, PAGE_PRESENT | PAGE_WRITABLE) < 0)
+        int status = pml4_map(kernel_pml4, (void *)(base + i * PAGE_SIZE), page, PAGE_PRESENT | PAGE_WRITABLE);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
     }
 

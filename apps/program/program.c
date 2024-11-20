@@ -1,43 +1,39 @@
-#include <h_syscall.h>
-#include <stddef.h>
-
-void read(uint64_t stream, uint8_t *buf, size_t len)
-{
-    syscall(0, stream, (uint64_t)buf, len, 0, 0, 0);
-}
-
-void write(uint64_t stream, const uint8_t *buf, size_t len)
-{
-    syscall(1, stream, (uint64_t)buf, len, 0, 0, 0);
-}
-
-uint64_t fork(void)
-{
-    return syscall(2, 0, 0, 0, 0, 0, 0);
-}
+#include <hydra/kernel.h>
+#include <stdio.h>
 
 int main(void)
 {
-    const char *str = "Hello User World!\n";
-    write(1, str, 18);
+    int64_t pid = syscall_fork();
+    if (pid < 0)
+    {
+        fputs("Failed to fork process!\n", stdout);
+        return 0;
+    }
 
-    uint64_t pid = fork();
     if (pid == 0)
     {
-        write(1, "Forked process\n", 15);
-        while (1);
-    }
-    
-    uint8_t c = 0;
-    while (1)
-    {
-        read(0, &c, 1);
-        if (c != 0)
-        {
-            write(1, &c, 1);
-        }
+        fputs("Forked process! Press enter to continue... \n", stdout);
+        while (fgetc(stdin) != '\n');
+
+        return 0;
     }
 
-    while (1);
+    while (syscall_ping(pid) == pid);
+
+    printf("test %s, %d%c", "ahhh", 5, '\n');
+    fprintf(stdout, "test %s, %d%c", "ahhh", 5, '\n');
+    fputs("Hello User World!\n", stdout);
+
+    while (1)
+    {
+        char ascii = fgetc(stdin);
+        if (ascii == 0)
+        {
+            continue;
+        }
+
+        fputc(ascii, stdout);
+    }
+
     return 0;
 }

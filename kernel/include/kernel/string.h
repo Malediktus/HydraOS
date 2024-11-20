@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <kernel/status.h>
 
 size_t strlen(const char *str);
 int strcmp(const char *s1, const char *s2);
@@ -11,6 +12,7 @@ char *strcpy(char *to, char *from);
 
 void *memset(void *dest, register int val, register size_t len);
 void memcpy(void *dest, const void *src, size_t len);
+int memcmp(const char *cs_in, const char *ct_in, size_t n);
 
 int atoui(char *s);
 

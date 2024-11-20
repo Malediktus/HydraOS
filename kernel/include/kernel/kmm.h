@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include <kernel/status.h>
 #include <kernel/vmm.h>
 
 int kmm_init(page_table_t *kernel_pml4, uint64_t base, size_t size, size_t alignment);

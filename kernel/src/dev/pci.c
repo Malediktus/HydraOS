@@ -70,7 +70,7 @@ static int add_pci_device(uint8_t bus, uint8_t device, uint8_t function)
         pci_devices = krealloc(pci_devices, pci_device_capacity_old, pci_device_capacity * sizeof(pci_device_t));
         if (!pci_devices)
         {
-            return -1;
+            return -ENOMEM;
         }
     }
 
@@ -109,9 +109,10 @@ static int pci_scan_device(uint8_t bus, uint8_t device)
     {
         if (pci_device_exists(bus, device, function))
         {
-            if (add_pci_device(bus, device, function) < 0)
+            int status = add_pci_device(bus, device, function);
+            if (status < 0)
             {
-                return -1;
+                return status;
             }
         }
     }
@@ -123,9 +124,10 @@ static int pci_scan_bus(uint8_t bus)
 {
     for (uint8_t device = 0; device < MAX_DEVICE; device++)
     {
-        if (pci_scan_device(bus, device) < 0)
+        int status = pci_scan_device(bus, device);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
     }
 
@@ -139,14 +141,15 @@ int pci_init()
     pci_devices = kmalloc(pci_device_capacity * sizeof(pci_device_t));
     if (!pci_devices)
     {
-        return -1;
+        return -ENOMEM;
     }
 
     for (uint16_t bus = 0; bus < MAX_BUS; bus++)
     {
-        if (pci_scan_bus(bus) < 0)
+        int status = pci_scan_bus(bus);
+        if (status < 0)
         {
-            return -1;
+            return status;
         }
     }
 
