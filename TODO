@@ -6,3 +6,4 @@
 - more logging
 - kernel logging before device initialization
 - add gnuefi build to setup script
+- kernel modules

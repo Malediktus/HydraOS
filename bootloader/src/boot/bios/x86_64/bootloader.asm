@@ -347,8 +347,6 @@ jump_long_mode:
 
     jmp gdt.code:long_mode_start
 
-%include "src/boot/bios/x86_64/fat32.asm"
-
 section .data
 
 boot_drive: db 0x00

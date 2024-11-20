@@ -211,6 +211,7 @@ void kmain(uint64_t multiboot2_struct_addr)
         return;
     }
 
+
     if (interrupts_init() < 0)
     {
         return;

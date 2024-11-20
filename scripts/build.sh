@@ -51,7 +51,7 @@ for dir in ../apps/*/; do
 done
 
 cat > /tmp/hydra_root/boot/grub/grub.cfg << EOF
-set timeout=5
+set timeout=0
 set default=0
 
 menuentry "HydraOS" {

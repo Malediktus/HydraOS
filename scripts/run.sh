@@ -5,7 +5,7 @@ set -e
 DIR="`dirname "${BASH_SOURCE[0]}"`"
 cd "$DIR" || exit
 
-HYDRAOS_BOOT_SYSTEM='BIOS'
+HYDRAOS_BOOT_SYSTEM='GRUB'
 
 source build.sh
 
