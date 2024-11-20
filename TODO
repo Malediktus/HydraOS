@@ -5,3 +5,4 @@
 - device managment
 - more logging
 - kernel logging before device initialization
+- add gnuefi build to setup script
