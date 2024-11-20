@@ -1,6 +1,7 @@
 bits 16
 extern _start
 
+%define DISK_ERR 1
 %define NO_PCI_ERR 2
 %define UNSUPPORTED_CPU_ERR 3
 %define ENABLE_A20_ERR 4
@@ -9,6 +10,8 @@ extern _start
 section .text
 
 _start:
+    mov [boot_drive], dl
+
     call check_pci
     cmp ax, 0x00
     je .no_pci
@@ -344,6 +347,12 @@ jump_long_mode:
 
     jmp gdt.code:long_mode_start
 
+%include "src/boot/bios/x86_64/fat32.asm"
+
+section .data
+
+boot_drive: db 0x00
+
 section .rodata
 
 PRESENT        equ 1 << 7
@@ -391,6 +400,8 @@ low_memory resw 1
 mmap_length resw 1
 mmap resb 480 ; 20 * 24
 
+boot_info resb 19
+
 section .code
 
 ; ==============================
@@ -402,9 +413,18 @@ bits 64
 extern main
 
 long_mode_start:
-    mov rdi, low_memory
-    mov rsi, mmap
-    mov rdx, mmap_length
+    mov byte [boot_info], 0 ; legacy BIOS
+    
+    mov ax, [low_memory]
+    mov word [boot_info+1], ax
+
+    mov qword [boot_info+3], mmap
+
+    xor rax, rax
+    mov ax, [mmap_length]
+    mov qword [boot_info+11], rax
+
+    mov rdi, boot_info
     call main
 
     cli

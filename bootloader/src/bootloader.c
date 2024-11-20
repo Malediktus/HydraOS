@@ -1055,11 +1055,20 @@ typedef struct
 #define MMAP_ACPI_NVS
 #define MMAP_BAD_MEMORY
 
-void main(uint16_t *low_memory, mmap_entry_t *mmap, uint16_t *mmap_length)
+typedef struct
 {
-    for (uint16_t i = 0; i < *mmap_length; i++)
+    uint8_t boot_type; // LEGACY BIOS: 0, UEFI: 1
+    uint16_t low_memory;
+    mmap_entry_t *mmap;
+    uint64_t mmap_length;
+} __attribute__((packed)) boot_info_t;
+
+void main(boot_info_t *boot_info)
+{
+    printf_("low memory: 0x%x\n\n", boot_info->low_memory);
+    for (uint16_t i = 0; i < boot_info->mmap_length; i++)
     {
-        printf_("base 0x%x, length 0x%x, type %d\n", mmap[i].base, mmap[i].length, mmap[i].type);
+        printf_("base 0x%x, length 0x%x, type %d\n", boot_info->mmap[i].base, boot_info->mmap[i].length, boot_info->mmap[i].type);
     }
     while (1);
 }

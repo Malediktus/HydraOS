@@ -16,8 +16,6 @@ mkdir -p /tmp/hydra_root/include
 pushd ../bootloader
     echo "Compiling Bootloader"
     make all
-    cp -r include/* /tmp/hydra_root/include/
-    cat build/bootsector.bin build/bootloader.bin > build/bootdisk.bin
 popd
 
 pushd ../kernel
@@ -46,7 +44,7 @@ for dir in ../apps/*/; do
 done
 
 cat > /tmp/hydra_root/boot/grub/grub.cfg << EOF
-set timeout=0
+set timeout=5
 set default=0
 
 menuentry "HydraOS" {
@@ -73,8 +71,14 @@ sudo losetup /dev/loop1 ../hydraos.img -o 1048576
 sudo mkdosfs -F32 -f 2 /dev/loop1
 sudo mount /dev/loop1 /mnt
 sudo cp -rf /tmp/hydra_root/* /mnt
-#sudo grub-install --root-directory=/mnt --no-floppy --modules="normal part_msdos multiboot2" /dev/loop0
-sudo dd if=../bootloader/build/bootdisk.bin of=/dev/loop0 conv=notrunc
+if [[ $HYDRAOS_BOOT_SYSTEM == 'UEFI' ]]; then
+    source uefifs.sh
+elif [[ $HYDRAOS_BOOT_SYSTEM == 'GRUB' ]]; then
+    sudo grub-install --root-directory=/mnt --no-floppy --modules="normal part_msdos multiboot2" /dev/loop0
+else
+    sudo dd if=../bootloader/build/bootsector.bin of=/dev/loop0 conv=notrunc bs=446 count=1
+    sudo dd if=../bootloader/build/bootloader.bin of=/dev/loop0 conv=notrunc bs=512 seek=1
+fi
 sudo umount /mnt
 sudo losetup -d /dev/loop0
 sudo losetup -d /dev/loop1

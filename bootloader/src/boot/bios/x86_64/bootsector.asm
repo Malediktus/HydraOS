@@ -2,9 +2,12 @@ bits 16
 org 0x7c00
 
 %define SECOND_STAGE_ADDR 0x7e00
+%define SECOND_STAGE_SECTORS 125
 
 %define NO_EXTENDED_MODE_ERR 0
 %define DISK_ERR 1
+
+jmp setup
 
 setup:
     mov [boot_drive], dl
@@ -23,11 +26,13 @@ entry:
     call check_extended_mode
     jc .no_extended_mode
 
-    mov ax, 125
+    mov ax, SECOND_STAGE_SECTORS
     mov si, SECOND_STAGE_ADDR
     mov bx, 0x01
     xor cx, cx
     call disk_read
+
+    mov dl, [boot_drive]
 
     jmp 0x0000:SECOND_STAGE_ADDR
 
